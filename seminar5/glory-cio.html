@@ -1,0 +1,429 @@
+<title>The Glory Migration</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: banknote security-print. A guilloche rosette heads one central "screen" column; the case file of collected answers sits beside it on wide screens, below it on phones. */
+:root{
+  --paper:#E8EFE9; --sheet:#F7FAF6; --ink:#1D2550; --muted:#55607E; --rule:#C6D3CA;
+  --accent:#985C10; --accent-soft:#F1E2C8; --good:#1F6B4B; --good-soft:#D6ECE0;
+  --bad:#A03933; --bad-soft:#F5DCD9; --guil:#7A90B6;
+  --f-display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --f-body:"Atkinson Hyperlegible",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"JetBrains Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#0E1327; --sheet:#161D39; --ink:#E3E8F5; --muted:#9BA4C3; --rule:#2B355D;
+  --accent:#E2A64F; --accent-soft:#3A2E1B; --good:#5FC89C; --good-soft:#143525;
+  --bad:#F0867E; --bad-soft:#3D1E21; --guil:#4C5D8E; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#0E1327; --sheet:#161D39; --ink:#E3E8F5; --muted:#9BA4C3; --rule:#2B355D;
+  --accent:#E2A64F; --accent-soft:#3A2E1B; --good:#5FC89C; --good-soft:#143525;
+  --bad:#F0867E; --bad-soft:#3D1E21; --guil:#4C5D8E; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.55;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1080px;margin:0 auto;display:grid;gap:24px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:920px){.wrap{grid-template-columns:minmax(0,1fr) 300px;align-items:start}}
+
+header.top{grid-column:1/-1;display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+#rosette{width:92px;height:92px;max-width:100%}
+.brand small{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.brand h1{margin:2px 0 0;font-family:var(--f-display);font-stretch:125%;font-weight:800;font-size:clamp(26px,5vw,40px);line-height:1.02;letter-spacing:-.01em;text-wrap:balance}
+.brand h1 span{color:var(--accent)}
+
+.hud{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:12px 20px;align-items:center;justify-content:space-between;
+  border-block:1px solid var(--rule);padding-block:10px}
+.stamps{display:flex;gap:8px;flex-wrap:wrap}
+.stamp{font-family:var(--f-mono);font-size:12px;font-weight:600;letter-spacing:.06em;padding:4px 10px;border:1.5px dashed var(--rule);border-radius:999px;color:var(--muted)}
+.stamp.on{border-style:solid;border-color:var(--good);color:var(--good);background:var(--good-soft)}
+.meter{display:flex;align-items:center;gap:10px;font-family:var(--f-mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bar{width:140px;height:8px;border-radius:99px;background:var(--rule);overflow:hidden}
+.bar i{display:block;height:100%;width:50%;background:var(--accent);transition:width .5s ease}
+.meter b{color:var(--ink);font-variant-numeric:tabular-nums;min-width:3ch;text-align:right}
+
+main.stage{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:clamp(18px,4vw,34px);min-width:0}
+.eyebrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.year{background:var(--ink);color:var(--sheet);padding:2px 8px;border-radius:4px}
+.qtag{color:var(--accent);font-weight:600}
+h2{font-family:var(--f-display);font-stretch:112%;font-weight:750;font-size:clamp(22px,3.6vw,30px);line-height:1.15;margin:12px 0 10px;text-wrap:balance}
+p{margin:0 0 12px;max-width:65ch}
+.lede{font-size:18px}
+.muted{color:var(--muted)}
+
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin:18px 0}
+.fact{border-top:2px solid var(--ink);padding-top:8px}
+.fact b{display:block;font-family:var(--f-display);font-stretch:120%;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.fact span{font-size:14px;color:var(--muted)}
+
+.opts{display:grid;gap:10px;margin:18px 0 6px}
+.opt{all:unset;box-sizing:border-box;cursor:pointer;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;align-items:start;
+  padding:14px 16px;border:1.5px solid var(--rule);border-radius:var(--r);background:var(--paper);transition:border-color .15s,transform .15s}
+.opt:hover{border-color:var(--ink)}
+.opt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.opt .k{font-family:var(--f-mono);font-weight:600;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;border:1.5px solid var(--ink);font-size:13px}
+.opt .t{min-width:0}
+.opt .t strong{display:block;font-size:17px}
+.opt .t em{font-style:normal;color:var(--muted);font-size:15px}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt.sel .k{background:var(--accent);border-color:var(--accent);color:var(--sheet)}
+.opt.right{border-color:var(--good);background:var(--good-soft)}
+.opt.right .k{background:var(--good);border-color:var(--good);color:var(--sheet)}
+.opt.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.opt.wrong .k{background:var(--bad);border-color:var(--bad);color:var(--sheet)}
+.opt[disabled]{cursor:default}
+.opt .why{display:block;margin-top:6px;font-size:14px;color:var(--ink)}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:18px 0}
+.tile{all:unset;box-sizing:border-box;cursor:pointer;padding:16px;border-radius:var(--r);border:1.5px dashed var(--ink);min-height:118px;display:flex;flex-direction:column;gap:6px}
+.tile:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.tile b{font-family:var(--f-display);font-stretch:115%;font-size:19px}
+.tile span{font-size:14px;color:var(--muted)}
+.tile.open{border-style:solid;background:var(--paper);cursor:default}
+.tile.open span{color:var(--ink);font-size:15px}
+
+.receipt{margin:18px 0 6px;background:var(--paper);border:1px solid var(--rule);border-radius:6px;padding:16px 18px;font-size:16px;position:relative}
+.receipt .head{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:8px;display:flex;gap:8px;align-items:center}
+.receipt.good{border-color:var(--good)} .receipt.good .head{color:var(--good)}
+.receipt.bad{border-color:var(--bad)} .receipt.bad .head{color:var(--bad)}
+.receipt ul{margin:6px 0 4px;padding-left:20px} .receipt li{margin-bottom:4px}
+.term{margin-top:12px;padding-top:10px;border-top:1px dashed var(--rule);font-size:15px}
+.term b{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-right:6px}
+.inf{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;border:1px solid var(--muted);color:var(--muted);border-radius:4px;padding:0 5px;margin-left:4px;white-space:nowrap}
+
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:16px;padding:12px 20px;border-radius:999px;background:var(--ink);color:var(--sheet)}
+.btn:hover{background:var(--accent)}
+.btn.ghost{background:transparent;color:var(--ink);border:1.5px solid var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+
+.timeline{list-style:none;padding:0;margin:20px 0;display:grid;gap:0}
+.timeline li{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px}
+.timeline .y{font-family:var(--f-mono);font-weight:600;text-align:right;padding-top:10px;font-variant-numeric:tabular-nums}
+.timeline .d{min-width:0;border-left:2px solid var(--rule);padding:10px 0 10px 18px;position:relative}
+.timeline .d::before{content:"";position:absolute;left:-7px;top:16px;width:12px;height:12px;border-radius:50%;background:var(--sheet);border:2px solid var(--ink)}
+.timeline li.hi .d::before{background:var(--accent);border-color:var(--accent)}
+.big{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}
+.big div{border:1.5px solid var(--ink);border-radius:var(--r);padding:14px}
+.big b{display:block;font-family:var(--f-display);font-stretch:125%;font-weight:800;font-size:34px;color:var(--accent);line-height:1}
+
+aside.file{background:var(--sheet);border:1px solid var(--rule);border-radius:var(--r);padding:18px;min-width:0}
+@media (min-width:920px){aside.file{position:sticky;top:max(16px,env(safe-area-inset-top,0px))}}
+aside.file h3{margin:0 0 4px;font-family:var(--f-display);font-stretch:115%;font-size:18px}
+aside.file .sub{font-size:13px;color:var(--muted);margin-bottom:12px}
+.note{border-top:1px solid var(--rule);padding:10px 0;font-size:14px}
+.note b{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:3px}
+.note.empty p{color:var(--muted);font-style:italic}
+.note.filled b{color:var(--good)}
+
+.report .ans{border-top:2px solid var(--ink);padding:12px 0 6px}
+.report .ans h4{margin:0 0 6px;font-family:var(--f-display);font-stretch:110%;font-size:17px}
+.prompts{background:var(--accent-soft);border-radius:var(--r);padding:14px 18px;margin-top:18px}
+.prompts h4{margin:0 0 6px;font-family:var(--f-display);font-stretch:110%}
+.prompts ol{margin:0;padding-left:20px}
+
+/* Finished state: one fixed look in both themes so it reads the same on every screen in the room */
+:root{--done-bg:#E3A53F; --done-ink:#17204A; --cert-fg:#F7E9C8}
+html.finished body{background:var(--done-bg)}
+html.finished header.top, html.finished .hud, html.finished .meter, html.finished .brand small{color:var(--done-ink)}
+html.finished .brand h1 span{color:var(--done-ink)}
+html.finished .hud{border-color:var(--done-ink)}
+.cert{background:var(--done-ink);color:var(--cert-fg);border:6px double var(--done-bg);border-radius:var(--r);padding:clamp(22px,5vw,40px) clamp(16px,4vw,32px);text-align:center;margin-bottom:24px}
+.cert .closed{font-family:var(--f-display);font-stretch:125%;font-weight:800;font-size:clamp(44px,11vw,104px);line-height:.92;color:var(--done-bg);letter-spacing:-.01em}
+.cert .who{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:clamp(26px,6vw,48px);margin-top:14px;overflow-wrap:anywhere;line-height:1.1}
+.cert .meta{font-family:var(--f-mono);font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin-top:12px;opacity:.9}
+.sign{display:grid;gap:10px;margin:18px 0;max-width:460px}
+.sign label{font-family:var(--f-display);font-stretch:110%;font-weight:700;font-size:18px}
+.sign input{font:inherit;font-size:18px;padding:12px 14px;border-radius:var(--r);border:1.5px solid var(--ink);background:var(--paper);color:var(--ink)}
+.sign input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.sign .btn{justify-self:start}
+.fade{animation:fade .35s ease both}
+@keyframes fade{from{opacity:.25;transform:translateY(6px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.fade{animation:none}.bar i{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <canvas id="rosette" width="184" height="184" aria-hidden="true"></canvas>
+    <div class="brand">
+      <small>Digital Business Management · Case game</small>
+      <h1>The Glory <span>Migration</span></h1>
+    </div>
+  </header>
+
+  <div class="hud">
+    <div class="stamps" id="stamps" aria-label="Case questions answered"></div>
+    <div class="meter">Board confidence <span class="bar"><i id="barfill"></i></span><b id="conf">50%</b></div>
+  </div>
+
+  <main class="stage" id="stage" aria-live="polite"></main>
+
+  <aside class="file">
+    <h3>Your case file</h3>
+    <div class="sub">Each good decision adds an answer to one of the four seminar questions.</div>
+    <div id="notes"></div>
+  </aside>
+</div>
+
+<script>
+const QUESTIONS = {
+  Q1:"Why did Glory choose a cloud solution rather than modernising its systems?",
+  Q2:"Why was it necessary to hire a systems integrator?",
+  Q3:"What were the main organisational change requirements?",
+  Q4:"Why a regional rollout, and why start in the UK?"
+};
+
+const SCENES = [
+ {kind:"intro", year:"2015", title:"You are Glory's new Chief Information Officer",
+  body:`<p class="lede">Every time someone takes cash out of an ATM, a company like Glory Global Solutions is probably managing how that cash is counted, dispensed and deposited. It is a big business: over 3.2 million ATMs worldwide handled about 10 billion withdrawals in 2016, worth nearly €1 trillion.</p>
+  <p>Glory started in 1918 in Himeji, Japan, making light bulbs. It moved into coin and cash counters, then ATMs in the 1970s. In 2013 it bought Talaris, a UK cash management firm, and set up headquarters in Basingstoke, England.</p>
+  <div class="facts">
+    <div class="fact"><b>2,500</b><span>employees</span></div>
+    <div class="fact"><b>100</b><span>countries</span></div>
+    <div class="fact"><b>€1.7bn</b><span>annual revenue</span></div>
+    <div class="fact"><b>25+</b><span>acquisitions</span></div>
+  </div>
+  <p>The board wants to grow. Your job is to fix the IT that is holding them back. Make the right calls and you'll build a full answer to all four seminar questions as you go.</p>`,
+  cta:"Inspect the IT estate"},
+
+ {kind:"reveal", year:"2015", title:"First, look at what you've inherited",
+  prompt:"Open all four folders to see why the board is worried.",
+  tiles:[
+   {h:"25+ acquisitions", hint:"What came with each company?", t:"Every company Glory bought brought its own <b>legacy systems</b>, built in different countries, by different developers, for different lines of business."},
+   {h:"A pile of data centres", hint:"Where does all this run?", t:"Glory also inherited the data centres of the firms it bought. Running so many separate data centres is <b>inefficient and expensive</b>."},
+   {h:"Systems that can't talk", hint:"Can managers see the business?", t:"The systems <b>cannot communicate</b>. Managers can't see the whole business or understand how processes work across the different units."},
+   {h:"A small cloud win", hint:"Anything already working?", t:"Glory had already moved to <b>Office 365</b>. For the first time, staff could share documents and data across every business segment."}
+  ],
+  term:["Legacy system","An older system still in use, often hard to connect to newer technology. Glory had dozens of them."]},
+
+ {kind:"choice", year:"2015", q:"Q1", title:"The board asks: what's the plan?",
+  prompt:"Glory can't grow until it can streamline and standardise its business processes worldwide. Pick your strategy.",
+  opts:[
+   {t:"Modernise what we have", s:"Upgrade each country's systems and keep our own data centres.",
+    fb:"Upgrading 25+ separate systems leaves you with 25+ newer separate systems. They still don't share data, managers still can't see the whole business, and you still pay to run all those data centres."},
+   {t:"Move to one global platform in the cloud", s:"A single enterprise database, from a single vendor.", ok:true,
+    fb:`<ul><li>One global database replaces the patchwork, so processes can be <b>standardised worldwide</b> and managers can finally see the whole business.</li><li>Moving to the cloud <b>greatly reduces data management and infrastructure costs</b>: no more inherited data centres.</li><li>Glory had already seen cloud work with Office 365.</li><li>Managers expected a <b>positive return on investment within four years</b>.</li></ul>`},
+   {t:"Build our own data centre and write a new system", s:"Full control, made to measure.",
+    fb:"You'd swap many data centres for one very expensive new one, plus years of custom development. Glory also lacked the in-house expertise for this kind of move (remember that for later)."}
+  ],
+  term:["Cloud computing","Renting computing power, storage and software over the internet from a provider, instead of owning and running it yourself."],
+  note:"Modernising would leave a patchwork of 25+ incompatible legacy systems and costly inherited data centres. A single cloud platform from one vendor gives one global database, standard processes worldwide, a single view of the business and much lower data and IT infrastructure costs. Glory had already seen success with Office 365 and expected ROI within four years."},
+
+ {kind:"multi", year:"2015", q:"Q1", title:"Two vendors left. Glory picks Oracle.",
+  prompt:"Which of these reasons does the case actually give? Select all that apply, then check.",
+  opts:[
+   {t:"Glory's European operations already used parts of Oracle's enterprise suite.", ok:true, fb:"Correct. Staff and systems in Europe already knew some Oracle software."},
+   {t:"Oracle offered computing on demand: rent the power you need and pay only for what you use.", ok:true, fb:"Correct. This pay-as-you-go model is a key cloud advantage."},
+   {t:"Having one vendor for both software licences and processing power.", ok:true, fb:"Correct. Dealing with one vendor instead of several was seen as a plus."},
+   {t:"Oracle was the cheapest provider on the market.", fb:"Not in the case. Price is never given as the reason."},
+   {t:"Oracle is Japanese, like Glory's parent company.", fb:"No. Oracle is an American company, and nationality isn't mentioned."}
+  ],
+  term:["Computing on demand","A cloud business model where customers rent capacity and pay per use instead of buying software and servers."],
+  note:"Oracle fitted because parts of its suite already ran in Europe, it offered computing on demand (pay per use), and one vendor could supply both licences and processing power."},
+
+ {kind:"choice", year:"2015", q:"Q2", title:"Who builds the new platform?",
+  prompt:"Glory's IT staff run the old systems well, but nobody there has moved a global business from legacy systems to the cloud before. Who does the work?",
+  opts:[
+   {t:"Our own IT team", s:"Nobody knows our business better.",
+    fb:"The case is blunt: few firms have the expertise to move quickly from legacy systems to a modern cloud platform. Your team would be learning on the job while also keeping the old systems running."},
+   {t:"Hire a systems integrator", s:"An outside consulting firm that specialises in this.", ok:true,
+    fb:`<p>Glory reviewed ten integrators and chose <b>TCS</b>.</p><ul><li>TCS had deep experience with Oracle enterprise systems and <b>prebuilt modules</b> Glory could reuse.</li><li>Integrators bring <b>best business practice</b> learned across many firms and industries.</li><li>They help <b>redesign business processes</b> and fit them into the new software and infrastructure.</li><li>They <b>filled the gaps in Glory's own knowledge</b>. The platform was ready in twelve months.</li></ul>`},
+   {t:"Let Oracle set it up", s:"They sold it to us, after all.",
+    fb:"Oracle supplies the platform. Someone still has to understand Glory's 24 countries, redesign its business processes and merge them into the new system. That is a different job from selling software."}
+  ],
+  term:["Systems integrator","A consulting firm with expertise in business hardware and software that helps a company redesign its processes and merge them into new enterprise systems."],
+  note:"Few firms have the expertise to move rapidly from legacy systems to a cloud platform. The integrator (TCS) filled gaps in Glory's knowledge, brought Oracle experience and prebuilt modules, and brought best-practice knowledge to redesign business processes and merge them into the new software. The platform was ready in 12 months."},
+
+ {kind:"multi", year:"2016", q:"Q3", title:"The platform works. Now people have to use it.",
+  prompt:"The new system goes to 24 countries and over 2,000 employees, some using it every day. Which of these are real change requirements? Select all that apply.",
+  opts:[
+   {t:"Train every business unit in the new, standardised business processes.", ok:true, fb:"Correct. The processes changed, not just the screens."},
+   {t:"Train staff to use the new software that runs those processes.", ok:true, fb:"Correct. Over 2,000 people needed to learn it."},
+   {t:"Manage a cultural shift from local ways of working to one global way.", ok:true, fb:"Correct. The case calls it a massive cultural change."},
+   {t:"Cope with different languages and regulations in each country.", ok:true, fb:"Correct. 24 countries, multiple languages, multiple sets of rules."},
+   {t:"Replace existing staff with new hires who already know Oracle.", fb:"No. Glory retrained its people rather than replacing them."},
+   {t:"Redesign Glory's ATMs and cash machines.", fb:"No. This project is about internal business systems, not Glory's products."}
+  ],
+  term:["Organisational change","Changes to people, processes, roles and culture that a new system requires. Often harder than the technology."],
+  note:"A massive cultural change: every business unit had to be trained in new standardised business processes and in the software that runs them; 2,000+ employees across 24 countries, with multiple languages and regulations, had to move to one global way of working."},
+
+ {kind:"choice", year:"2016", q:"Q4", title:"How do you switch over?",
+  prompt:"Old systems off, new platform on. There are three classic ways to do it. Which do you choose?",
+  opts:[
+   {t:"Direct cutover", s:"Switch every country to the new system on the same day.",
+    fb:"Glory judged this too risky. If something breaks, it breaks in 24 countries at once, and there is no old system to fall back on."},
+   {t:"Parallel running", s:"Run old and new systems side by side until the new one is proven.",
+    fb:"Safe, but Glory judged it too expensive and technically too difficult. Imagine keeping dozens of legacy systems in sync with the new platform."},
+   {t:"Phased, region by region", s:"Go live in one region, learn, then roll out to the rest.", ok:true,
+    fb:`<ul><li>Problems are <b>contained to one region</b> at a time.</li><li>Lessons from the first region improve the next ones.</li><li>Training can be focused where the system is going live.</li><li>It avoids the risk of a direct cutover and the cost of parallel running.</li></ul>`}
+  ],
+  term:["Phased rollout","Introducing a new system in stages, for example by region or by function, rather than all at once."],
+  note:"Direct cutover was too risky and parallel running too expensive and technically difficult. A regional (phased) rollout contains risk to one region at a time and lets lessons and training carry over to the next."},
+
+ {kind:"choice", year:"2016", q:"Q4", title:"Which region goes first?",
+  prompt:"The first region carries the most risk and teaches you the most. Where do you start?",
+  opts:[
+   {t:"Japan", s:"Home of the parent company.",
+    fb:"Glory is Japanese-owned, but Glory Global Solutions is run from the UK, and the case gives Japan no role in this rollout."},
+   {t:"The smallest country", s:"Fewest users, smallest damage if it goes wrong.",
+    fb:"A defensible idea, but it isn't what Glory did. Lessons from a tiny office may not carry over, and senior management would be far away from the problems."},
+   {t:"The UK", s:"Where the headquarters are.", ok:true,
+    fb:`<ul><li>The UK is Glory's <b>headquarters</b> (Basingstoke, since buying Talaris in 2013), so senior management could oversee the launch and fix problems up close.</li><li>Glory's European operations already used parts of Oracle's suite, so staff had some familiarity. <span class="inf">Inference</span></li></ul>`}
+  ],
+  note:"Glory started at its UK headquarters in Basingstoke, where management could oversee and fix problems directly (and where European staff already knew some Oracle software, an inference). The UK went live in 2016; other countries followed over 18 months."},
+
+ {kind:"timeline", year:"2018", title:"How it turned out"},
+ {kind:"report", year:"Debrief", title:"Your board report"}
+];
+
+const blank = () => ({i:0, score:0, decisions:0, notes:{Q1:[],Q2:[],Q3:[],Q4:[]}, opened:[], tries:0, picked:null, checked:false, multiSel:[], done:false});
+let S = blank();
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function confidence(){ return S.decisions ? Math.round(30 + 70*S.score/S.decisions) : 50 }
+function hud(){
+  $("stamps").innerHTML = Object.keys(QUESTIONS).map(q=>`<span class="stamp ${S.notes[q].length?'on':''}">${q}${S.notes[q].length?' ✓':''}</span>`).join("");
+  const c = confidence(); $("conf").textContent = c+"%"; $("barfill").style.width = c+"%";
+  $("notes").innerHTML = Object.entries(QUESTIONS).map(([q,txt])=> S.notes[q].length
+    ? `<div class="note filled"><b>${q} · answered</b>${S.notes[q].map(n=>`<p>${n}</p>`).join("")}</div>`
+    : `<div class="note empty"><b>${q}</b><p>${txt}</p></div>`).join("");
+}
+function addNote(sc){ if(sc.note && !S.notes[sc.q].includes(sc.note)) S.notes[sc.q].push(sc.note) }
+function head(sc){ return `<div class="eyebrow"><span class="year">${sc.year}</span>${sc.q?`<span class="qtag">${sc.q} · ${QUESTIONS[sc.q]}</span>`:''}<span>Step ${S.i+1} of ${SCENES.length}</span></div><h2>${sc.title}</h2>` }
+function termHTML(sc){ return sc.term ? `<div class="term"><b>Key term</b><strong>${sc.term[0]}:</strong> ${sc.term[1]}</div>` : "" }
+function next(){ S.i++; S.picked=null; S.checked=false; S.multiSel=[]; S.tries=0; render(); $("stage").scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth', block:'start'}); }
+
+function render(){
+  const sc = SCENES[S.i], st = $("stage"); let h = `<div class="fade">`+head(sc);
+  if(sc.kind==="intro"){
+    h += sc.body + `<div class="actions"><button class="btn" id="go">${sc.cta}</button></div>`;
+  }
+  if(sc.kind==="reveal"){
+    h += `<p>${sc.prompt}</p><div class="tiles">` + sc.tiles.map((t,k)=>{
+      const o = S.opened.includes(k);
+      return `<button class="tile ${o?'open':''}" data-k="${k}" ${o?'aria-disabled="true"':''}><b>${t.h}</b><span>${o?t.t:t.hint+' Tap to open.'}</span></button>`}).join("") + `</div>`;
+    const all = S.opened.length===sc.tiles.length;
+    if(all) h += `<div class="receipt good"><div class="head">Diagnosis</div>Glory is a collection of companies that can't see or run itself as one business. That blocks its plan to grow. ${termHTML(sc)}</div>`;
+    h += `<div class="actions"><button class="btn" id="go" ${all?'':'disabled'}>${all?'Take it to the board':`Open ${sc.tiles.length-S.opened.length} more`}</button></div>`;
+  }
+  if(sc.kind==="choice"){
+    const L="ABC";
+    h += `<p>${sc.prompt}</p><div class="opts">` + sc.opts.map((o,k)=>{
+      let cls=""; if(S.picked===k) cls = o.ok?"right":"wrong";
+      const lock = S.picked!==null && sc.opts[S.picked].ok;
+      return `<button class="opt ${cls}" data-k="${k}" ${lock?'disabled':''}><span class="k">${L[k]}</span><span class="t"><strong>${o.t}</strong><em>${o.s}</em></span></button>`}).join("") + `</div>`;
+    if(S.picked!==null){
+      const o = sc.opts[S.picked];
+      h += o.ok
+        ? `<div class="receipt good"><div class="head">✓ Board approves${S.tries>1?' (after a rethink)':''}</div>${o.fb}${termHTML(sc)}</div><div class="actions"><button class="btn" id="go">Next</button></div>`
+        : `<div class="receipt bad"><div class="head">✗ The board pushes back</div><p>${o.fb}</p><p class="muted" style="margin:0">Pick another option.</p></div>`;
+    }
+  }
+  if(sc.kind==="multi"){
+    h += `<p>${sc.prompt}</p><div class="opts">` + sc.opts.map((o,k)=>{
+      const sel = S.multiSel.includes(k); let cls = sel?"sel":"";
+      if(S.checked) cls = o.ok ? "right" : (sel ? "wrong" : "");
+      const mark = S.checked ? (o.ok?"✓":(sel?"✗":"–")) : (sel?"✓":"");
+      return `<button class="opt ${cls}" data-k="${k}" ${S.checked?'disabled':''} aria-pressed="${sel}"><span class="k">${mark}</span><span class="t"><strong>${o.t}</strong>${S.checked?`<span class="why">${o.fb}</span>`:''}</span></button>`}).join("") + `</div>`;
+    if(!S.checked) h += `<div class="actions"><button class="btn" id="check" ${S.multiSel.length?'':'disabled'}>Check my answer</button></div>`;
+    else {
+      const perfect = S.lastPerfect;
+      h += `<div class="receipt ${perfect?'good':'bad'}"><div class="head">${perfect?'✓ Spot on':'Not quite. Green rows are the right answers'}</div>${perfect?'You found every reason and avoided the traps.':'Read the notes on each row, then carry on. The correct reasons go into your case file.'}${termHTML(sc)}</div><div class="actions"><button class="btn" id="go">Next</button></div>`;
+    }
+  }
+  if(sc.kind==="timeline"){
+    h += `<p>Your decisions match what Glory actually did. Here is how the four-year transition played out.</p>
+    <ol class="timeline">
+      <li class="hi"><span class="y">2015</span><span class="d"><b>Decision.</b> Move to one Oracle cloud platform; hire TCS as integrator.</span></li>
+      <li><span class="y">+12 mo</span><span class="d"><b>Build.</b> TCS and Glory redesign processes; platform ready to deploy.</span></li>
+      <li class="hi"><span class="y">2016</span><span class="d"><b>UK goes live</b> at headquarters.</span></li>
+      <li><span class="y">+18 mo</span><span class="d"><b>Regional rollout</b> to the remaining countries.</span></li>
+      <li class="hi"><span class="y">2018</span><span class="d"><b>Target date</b> for full implementation. Four years from start to finish.</span></li>
+    </ol>
+    <div class="big"><div><b>−50%</b>expected cut in annual IT costs compared with the legacy systems</div><div><b>1 firm</b>the bigger prize: operating and growing as a single global company</div></div>
+    <div class="actions"><button class="btn" id="go">See your board report</button></div>`;
+  }
+  if(sc.kind==="report" && !S.name){
+    h += `<p class="lede">Your answers to all four questions are ready. Sign the report to close the case.</p>
+    <div class="sign"><label for="who">Your name</label><input id="who" maxlength="40" autocomplete="name" placeholder="First and last name"><button class="btn" id="signbtn" disabled>Sign and close the case</button></div>`;
+  }
+  if(sc.kind==="report" && S.name){
+    const c = confidence();
+    h = `<div class="fade"><div class="cert" role="status"><div class="meta">Glory Global Solutions · Board report signed</div><div class="closed">CASE<br>CLOSED</div><div class="who">${esc(S.name)}</div><div class="meta">Finished ${S.finishedAt} · ${S.score}/${S.decisions} first time</div></div>`;
+    h += `<p class="lede">You made ${S.score} of ${S.decisions} calls right first time. Board confidence: <b>${c}%</b>. ${c>=85?'The board would hire you again.':c>=60?'Solid. A couple of rethinks, but you got there.':'You got there in the end, which is how most real projects go.'}</p>
+    <div class="report">` + Object.entries(QUESTIONS).map(([q,txt])=>`<div class="ans"><h4>${q}. ${txt}</h4>${S.notes[q].map(n=>`<p>${n}</p>`).join("")}</div>`).join("") + `</div>
+    <div class="prompts"><h4>Take it further in the seminar</h4><ol>
+      <li>Glory now depends on one vendor for software and computing. What are the risks of that? (Think: vendor lock-in, outages, price rises.)</li>
+      <li>Data from 24 countries now sits in one cloud database. Link this to last week: what data protection (GDPR) questions does that raise?</li>
+      <li>Which was harder for Glory: the technology or the people? Use evidence from your report.</li>
+    </ol></div>
+    <div class="actions"><button class="btn ghost" id="restart">Play again</button></div>`;
+  }
+  st.innerHTML = h + `</div>`;
+  document.documentElement.classList.toggle('finished', sc.kind==='report' && !!S.name);
+  bind(sc); hud(); rosette();
+}
+
+function bind(sc){
+  const go = $("go"); if(go) go.onclick = ()=>{ if(!go.disabled) next() };
+  const rs = $("restart"); if(rs) rs.onclick = ()=>{ S = blank(); render(); };
+  const who = $("who"), sb = $("signbtn");
+  if(who && sb){
+    who.oninput = ()=>{ sb.disabled = who.value.trim().length < 2 };
+    const sign = ()=>{ const n = who.value.trim(); if(n.length < 2) return;
+      S.name = n; S.finishedAt = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); render(); window.scrollTo(0,0); };
+    sb.onclick = sign; who.onkeydown = e=>{ if(e.key==='Enter') sign() };
+    who.focus();
+  }
+  if(sc.kind==="reveal") document.querySelectorAll(".tile").forEach(b=>b.onclick=()=>{
+    const k=+b.dataset.k; if(!S.opened.includes(k)){ S.opened.push(k); render(); document.querySelector(`.tile[data-k="${k}"]`)?.focus(); }});
+  if(sc.kind==="choice") document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+    if(b.disabled) return; const k=+b.dataset.k; S.tries++; S.picked=k;
+    if(sc.opts[k].ok){ S.decisions++; if(S.tries===1) S.score++; addNote(sc); }
+    render(); document.querySelector(".receipt")?.scrollIntoView({block:"nearest"}); });
+  if(sc.kind==="multi"){
+    document.querySelectorAll(".opt").forEach(b=>b.onclick=()=>{
+      if(S.checked) return; const k=+b.dataset.k;
+      S.multiSel = S.multiSel.includes(k) ? S.multiSel.filter(x=>x!==k) : [...S.multiSel,k];
+      render(); document.querySelector(`.opt[data-k="${k}"]`)?.focus(); });
+    const ck=$("check"); if(ck) ck.onclick=()=>{
+      if(!S.multiSel.length) return;
+      const perfect = sc.opts.every((o,k)=>!!o.ok===S.multiSel.includes(k));
+      S.checked=true; S.lastPerfect=perfect; S.decisions++; if(perfect) S.score++; addNote(sc);
+      render(); document.querySelector(".receipt")?.scrollIntoView({block:"nearest"}); };
+  }
+}
+
+/* Guilloche rosette, drawn from theme tokens */
+function rosette(){
+  const c=$("rosette"), x=c.getContext("2d"), cs=getComputedStyle(document.documentElement);
+  const w=c.width, R=w/2; x.clearRect(0,0,w,w);
+  const fin=document.documentElement.classList.contains('finished');
+  const cols= fin ? [cs.getPropertyValue("--done-ink").trim(), cs.getPropertyValue("--sheet").trim(), cs.getPropertyValue("--done-ink").trim()] : [cs.getPropertyValue("--guil").trim(), cs.getPropertyValue("--accent").trim(), cs.getPropertyValue("--ink").trim()];
+  const layers=[[0.86,0.30,11,cols[0],1],[0.70,0.22,17,cols[1],1],[0.46,0.16,8,cols[2],.9]];
+  layers.forEach(([a,b,n,col,lw])=>{
+    x.beginPath(); x.strokeStyle=col; x.lineWidth=lw; x.globalAlpha=.85;
+    for(let t=0;t<=Math.PI*2*7+0.01;t+=0.01){
+      const r = R*(a - b*Math.abs(Math.sin(n*t/7)) );
+      const px = R + r*Math.cos(t) * (1 - 0.05*Math.cos(n*t)), py = R + r*Math.sin(t) * (1 - 0.05*Math.cos(n*t));
+      t===0?x.moveTo(px,py):x.lineTo(px,py);
+    }
+    x.stroke();
+  });
+  x.globalAlpha=1; x.fillStyle=cols[2]; x.font=`800 ${w*0.17}px Archivo, sans-serif`; x.textAlign="center"; x.textBaseline="middle"; x.fillText("€",R,R+2);
+}
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rosette);
+new MutationObserver(rosette).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme","class"]});
+document.fonts?.ready.then(rosette);
+
+function start(data){ if(data && data.S) S = data.S; render(); }
+window.claude?.hot?.snapshot?.(()=>({S}));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
