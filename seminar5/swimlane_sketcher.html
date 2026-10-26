@@ -1,0 +1,744 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Swimlane Sketcher</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-screen tool — toolbar, selection bar, scrollable lane canvas, hint line */
+:root{
+  --page:#e8ecef; --panel:#f8fafb; --lane:#fdfefe; --lane-alt:#f3f6f8; --head:#e1e7eb;
+  --rule:#c3ccd3; --dot:#d3dae0; --ink:#1b2730; --muted:#5a6873;
+  --accent:#2346c4; --accent-soft:#dde4fb; --on-accent:#ffffff; --danger:#b42318;
+  --n-step:#ffffff; --n-step-s:#3a4a56;
+  --n-dec:#fff1d1; --n-dec-s:#9a6a00;
+  --n-term:#dcf2e4; --n-term-s:#2e7a4b;
+  --n-data:#ebe6fb; --n-data-s:#6247b3;
+  --edge:#4a5964; --scrim:rgba(20,28,34,.45);
+  --f-ui:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --f-cond:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --page:#0f1418; --panel:#161d22; --lane:#172026; --lane-alt:#1b252c; --head:#202b33;
+  --rule:#34424c; --dot:#27333b; --ink:#e2e8ec; --muted:#95a3ad;
+  --accent:#8aa2ff; --accent-soft:#26315c; --on-accent:#0f1418; --danger:#ff8a7a;
+  --n-step:#1f2a31; --n-step-s:#a9b8c3; --n-dec:#3a2f12; --n-dec-s:#e2b54a;
+  --n-term:#173126; --n-term-s:#6fcf94; --n-data:#2a2442; --n-data-s:#b4a2f0;
+  --edge:#9aa8b2; --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --page:#0f1418; --panel:#161d22; --lane:#172026; --lane-alt:#1b252c; --head:#202b33;
+  --rule:#34424c; --dot:#27333b; --ink:#e2e8ec; --muted:#95a3ad;
+  --accent:#8aa2ff; --accent-soft:#26315c; --on-accent:#0f1418; --danger:#ff8a7a;
+  --n-step:#1f2a31; --n-step-s:#a9b8c3; --n-dec:#3a2f12; --n-dec-s:#e2b54a;
+  --n-term:#173126; --n-term-s:#6fcf94; --n-data:#2a2442; --n-data-s:#b4a2f0;
+  --edge:#9aa8b2; --scrim:rgba(0,0,0,.6); color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--page);color:var(--ink);font-family:var(--f-ui)}
+*{box-sizing:border-box}
+.app{height:100%;display:grid;grid-template-rows:auto auto minmax(0,1fr) auto;gap:8px;
+  padding-block:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px}
+.brand{display:flex;align-items:center;gap:8px;font:600 17px/1 var(--f-cond);letter-spacing:.02em;margin-right:auto}
+.brand svg{flex:none}
+.tools{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.grp{display:flex;gap:4px;align-items:center}
+.btn{font:500 13px/1 var(--f-ui);height:32px;padding:0 10px;border:1px solid var(--rule);background:var(--panel);
+  color:var(--ink);border-radius:6px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;white-space:nowrap}
+.btn:hover:not(:disabled){background:var(--head)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08);background:var(--accent)}
+.btn.danger{color:var(--danger)}
+.btn.icon{width:32px;padding:0;justify-content:center}
+.zoom{min-width:44px;text-align:center;font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted)}
+.ico .i-step{fill:var(--n-step);stroke:var(--n-step-s)}
+.ico .i-dec{fill:var(--n-dec);stroke:var(--n-dec-s)}
+.ico .i-term{fill:var(--n-term);stroke:var(--n-term-s)}
+.ico .i-data{fill:var(--n-data);stroke:var(--n-data-s)}
+.ico *{stroke-width:1.4}
+.ctx{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;min-height:40px;padding:4px 10px;
+  border:1px solid var(--rule);border-radius:8px;background:var(--panel);font-size:13px}
+.ctx-kind{font:600 11px/1 var(--f-cond);letter-spacing:.08em;text-transform:uppercase;color:var(--accent);
+  background:var(--accent-soft);padding:5px 7px;border-radius:4px}
+.ctx-name{font-weight:500;min-width:0;max-width:40ch;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ctx-hint{color:var(--muted)}
+.ctx-actions{display:flex;flex-wrap:wrap;gap:4px;margin-left:auto}
+.ctx .btn{height:28px;font-size:12px}
+.ctx select{font:500 12px var(--f-ui);height:28px;border:1px solid var(--rule);border-radius:6px;background:var(--panel);color:var(--ink);padding:0 6px}
+.stage{overflow:auto;min-height:0;border:1px solid var(--rule);border-radius:8px;background:var(--page);position:relative}
+#svg{display:block;user-select:none;-webkit-user-select:none}
+.hint{font-size:12px;color:var(--muted);line-height:1.5}
+.hint b{font-weight:600;color:var(--ink)}
+
+/* canvas interaction styles (page only) */
+.node{cursor:grab;touch-action:none}
+.node.sel .shape{stroke:var(--accent);stroke-width:2.5}
+.port{visibility:hidden;cursor:crosshair;touch-action:none}
+.port .pd{fill:var(--panel);stroke:var(--accent);stroke-width:1.5}
+.port .ph{fill:transparent}
+.node:hover .port,.node.sel .port{visibility:visible}
+.port:hover .pd{fill:var(--accent)}
+.edge{cursor:pointer}
+.edge-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke}
+.edge.sel .edge-line{stroke:var(--accent);stroke-width:2.4}
+.edge:hover .edge-line{stroke:var(--accent)}
+.arrow-sel{fill:var(--accent)}
+.lane-head{cursor:pointer}
+.lane-head.sel rect.hb{fill:var(--accent-soft)}
+.lane-head.sel text{fill:var(--accent)}
+.lane-resize{fill:transparent;cursor:row-resize;touch-action:none}
+.lane-resize:hover{fill:var(--accent);fill-opacity:.22}
+.temp{fill:none;stroke:var(--accent);stroke-width:1.6;stroke-dasharray:5 4;pointer-events:none}
+
+#editor{position:fixed;z-index:30;font:13px/1.3 var(--f-ui);text-align:center;color:var(--ink);background:var(--panel);
+  border:2px solid var(--accent);border-radius:6px;padding:6px;resize:none;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;
+  display:flex;align-items:center;gap:12px;background:var(--ink);color:var(--page);padding:8px 8px 8px 14px;border-radius:8px;font-size:13px;
+  max-width:calc(100% - 32px);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.toast button{font:600 12px var(--f-ui);background:transparent;color:var(--page);border:1px solid currentColor;border-radius:5px;height:26px;padding:0 9px;cursor:pointer}
+.scrim{position:fixed;inset:0;background:var(--scrim);z-index:50;display:grid;place-items:center;padding:16px}
+.dialog{width:min(640px,100%);max-height:100%;overflow:auto;background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:18px;display:grid;gap:12px}
+.dlg-head{display:flex;align-items:center;gap:10px}
+.dlg-head h2{font:600 18px/1.2 var(--f-cond);margin:0;margin-right:auto;text-wrap:balance}
+.dialog p{margin:0;font-size:13px;color:var(--muted);line-height:1.5;max-width:65ch}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:6px;overflow:hidden;width:max-content}
+.seg button{font:500 12px var(--f-ui);border:0;background:transparent;color:var(--ink);height:28px;padding:0 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+#dlgText{width:100%;height:240px;font:12px/1.45 var(--f-mono);color:var(--ink);background:var(--lane);border:1px solid var(--rule);border-radius:6px;padding:10px;resize:vertical}
+.dlg-actions{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;align-items:center}
+.err{color:var(--danger)!important}
+.file{position:relative;overflow:hidden}
+.file input{position:absolute;inset:0;opacity:0;cursor:pointer}
+@media (max-width:560px){.hint{display:none}.ctx-actions{margin-left:0}}
+@media (prefers-reduced-motion:no-preference){.toast{animation:rise .18s ease-out}@keyframes rise{from{opacity:0;transform:translate(-50%,8px)}}}
+</style>
+<style id="svgcss"></style>
+
+<div class="app">
+  <header class="bar">
+    <div class="brand">
+      <svg width="22" height="18" viewBox="0 0 22 18" aria-hidden="true"><rect x="0.5" y="0.5" width="21" height="17" rx="2" fill="none" stroke="var(--accent)"/><line x1="0.5" y1="6.2" x2="21.5" y2="6.2" stroke="var(--accent)"/><line x1="0.5" y1="11.8" x2="21.5" y2="11.8" stroke="var(--accent)"/><line x1="6" y1="0.5" x2="6" y2="17.5" stroke="var(--accent)"/><rect x="9" y="2" width="5" height="2.4" rx=".6" fill="var(--accent)"/><rect x="14" y="13.6" width="5" height="2.4" rx=".6" fill="var(--accent)"/></svg>
+      Swimlane Sketcher
+    </div>
+    <div class="tools">
+      <div class="grp"><button class="btn" id="addLane" title="Add a lane at the bottom">+ Lane</button></div>
+      <div class="grp" aria-label="Add a shape">
+        <button class="btn" data-add="step" title="Add a step (after the selected step, if any)"><svg class="ico" width="18" height="12" viewBox="0 0 18 12"><rect class="i-step" x="1" y="1" width="16" height="10" rx="1.5"/></svg>Step</button>
+        <button class="btn" data-add="decision" title="Add a decision"><svg class="ico" width="16" height="14" viewBox="0 0 16 14"><polygon class="i-dec" points="8,1 15,7 8,13 1,7"/></svg>Decision</button>
+        <button class="btn" data-add="terminal" title="Add a start or end point"><svg class="ico" width="18" height="12" viewBox="0 0 18 12"><rect class="i-term" x="1" y="1.5" width="16" height="9" rx="4.5"/></svg>Start/End</button>
+        <button class="btn" data-add="data" title="Add a document or data item"><svg class="ico" width="18" height="12" viewBox="0 0 18 12"><polygon class="i-data" points="4,1 17,1 14,11 1,11"/></svg>Document</button>
+      </div>
+      <div class="grp">
+        <button class="btn icon" id="undo" title="Undo (Ctrl+Z)" aria-label="Undo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3 2 6l3 3"/><path d="M2 6h7.5a4 4 0 0 1 0 8H7"/></svg></button>
+        <button class="btn icon" id="redo" title="Redo (Ctrl+Shift+Z)" aria-label="Redo"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m11 3 3 3-3 3"/><path d="M14 6H6.5a4 4 0 0 0 0 8H9"/></svg></button>
+      </div>
+      <div class="grp">
+        <button class="btn icon" id="zoomOut" aria-label="Zoom out">−</button>
+        <span class="zoom" id="zoomLbl">100%</span>
+        <button class="btn icon" id="zoomIn" aria-label="Zoom in">+</button>
+      </div>
+      <div class="grp">
+        <button class="btn" id="exportBtn">Export</button>
+        <button class="btn" id="importBtn">Import</button>
+        <button class="btn" id="newBtn" title="Start a blank diagram">New</button>
+      </div>
+    </div>
+  </header>
+  <div class="ctx" id="ctx" aria-live="polite"></div>
+  <main class="stage" id="stage">
+    <svg id="svg" xmlns="http://www.w3.org/2000/svg"><g id="world"></g></svg>
+  </main>
+  <footer class="hint"><b>Double-click</b> a shape, connector or lane name to rename it · <b>Drag from a blue dot</b> to another shape to connect, or into empty space to create a connected step · <b>Double-click empty lane space</b> to add a step · Drag a lane's bottom edge to resize · <b>Delete</b> removes the selection</footer>
+</div>
+
+<textarea id="editor" hidden aria-label="Edit label"></textarea>
+<div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Undo</button></div>
+
+<div class="scrim" id="dlg" hidden>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="dlg-head"><h2 id="dlgTitle">Export</h2><button class="btn" id="dlgClose">Close</button></div>
+    <div class="seg" id="dlgSeg"><button data-fmt="svg" aria-pressed="true">SVG image</button><button data-fmt="json" aria-pressed="false">JSON data</button></div>
+    <p id="dlgNote"></p>
+    <textarea id="dlgText" spellcheck="false" aria-label="Diagram data"></textarea>
+    <p class="err" id="dlgErr" hidden></p>
+    <div class="dlg-actions">
+      <label class="btn file" id="fileWrap">Choose .json file<input type="file" id="fileIn" accept=".json,application/json"></label>
+      <button class="btn" id="dlgCopy">Copy</button>
+      <button class="btn primary" id="dlgLoad">Load diagram</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const $ = s => document.querySelector(s);
+const svg = $('#svg'), world = $('#world'), stage = $('#stage');
+const HEAD = 136, GRID = 10, STORE = 'swimlane-sketcher-v1';
+const SHAPES = {
+  step:     {name:'Step',      w:150, h:64, label:'New step'},
+  decision: {name:'Decision',  w:150, h:96, label:'Decision?'},
+  terminal: {name:'Start / End', w:130, h:48, label:'End'},
+  data:     {name:'Document',  w:150, h:60, label:'Document'}
+};
+const FU = '"IBM Plex Sans",Arial,sans-serif', FC = '"IBM Plex Sans Condensed","Arial Narrow",Arial,sans-serif';
+const uid = p => p + Math.random().toString(36).slice(2, 9);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const snap = v => Math.round(v / GRID) * GRID;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- SVG styling shared by page and export ---------- */
+const VARS = {lane:'var(--lane)',laneAlt:'var(--lane-alt)',head:'var(--head)',rule:'var(--rule)',dot:'var(--dot)',ink:'var(--ink)',edge:'var(--edge)',
+  step:'var(--n-step)',stepS:'var(--n-step-s)',dec:'var(--n-dec)',decS:'var(--n-dec-s)',term:'var(--n-term)',termS:'var(--n-term-s)',data:'var(--n-data)',dataS:'var(--n-data-s)'};
+const LIGHT = {lane:'#fdfefe',laneAlt:'#f3f6f8',head:'#e1e7eb',rule:'#c3ccd3',dot:'#d3dae0',ink:'#1b2730',edge:'#4a5964',
+  step:'#ffffff',stepS:'#3a4a56',dec:'#fff1d1',decS:'#9a6a00',term:'#dcf2e4',termS:'#2e7a4b',data:'#ebe6fb',dataS:'#6247b3'};
+const svgCss = c => `
+.lane-band{fill:${c.lane}}.lane-band.alt{fill:${c.laneAlt}}.dot{fill:${c.dot}}
+.lane-rule{stroke:${c.rule};stroke-width:1}
+.lane-head .hb{fill:${c.head}}.lane-head .hr{stroke:${c.rule};stroke-width:1}
+.lane-head text{fill:${c.ink};font-family:${FC};font-weight:600;font-size:13px;letter-spacing:.06em}
+.shape{stroke-width:1.5}
+.s-step{fill:${c.step};stroke:${c.stepS}}.s-decision{fill:${c.dec};stroke:${c.decS}}
+.s-terminal{fill:${c.term};stroke:${c.termS}}.s-data{fill:${c.data};stroke:${c.dataS}}
+.node text{fill:${c.ink};font-family:${FU};font-size:13px}
+.edge-line{fill:none;stroke:${c.edge};stroke-width:1.6;stroke-linejoin:round}
+.arrow{fill:${c.edge}}
+.edge-label{fill:${c.ink};font-family:${FU};font-size:12px;font-weight:500;stroke:${c.lane};stroke-width:5px;paint-order:stroke;stroke-linejoin:round}`;
+$('#svgcss').textContent = svgCss(VARS);
+
+/* ---------- state ---------- */
+let state, sel = null, zoom = 1, drag = null, editing = null;
+let undoStack = [], redoStack = [];
+
+function sample() {
+  const lanes = [
+    {id:'l1', name:'Student', h:150},
+    {id:'l2', name:'Personal tutor', h:170},
+    {id:'l3', name:'Programme office', h:150}
+  ];
+  const N = (id, type, lane, x, label) => {
+    const s = SHAPES[type], L = lanes.find(l => l.id === lane);
+    return {id, type, lane, x, y: snap((L.h - s.h) / 2), w: s.w, h: s.h, label};
+  };
+  const nodes = [
+    N('n1','terminal','l1',170,'Needs more time'),
+    N('n2','step','l1',350,'Submit request with evidence'),
+    N('n3','step','l2',350,'Review request'),
+    N('n4','decision','l2',560,'Grounds valid?'),
+    N('n5','step','l3',780,'Record new deadline'),
+    N('n6','step','l1',560,'Explain decision and options'),
+    N('n7','terminal','l1',1000,'New deadline confirmed'),
+    N('n8','terminal','l1',780,'Request closed')
+  ];
+  const E = (from, to, label='') => ({id: uid('e'), from, to, label});
+  const edges = [E('n1','n2'),E('n2','n3'),E('n3','n4'),E('n4','n5','Yes'),E('n4','n6','No'),E('n6','n8'),E('n5','n7')];
+  return {title:'Example: coursework extension request', lanes, nodes, edges};
+}
+function load() {
+  try { const raw = localStorage.getItem(STORE); if (raw) { const s = normalize(JSON.parse(raw)); if (s) return s; } } catch (e) {}
+  return sample();
+}
+let saveT;
+function persist() { clearTimeout(saveT); saveT = setTimeout(() => { try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {} }, 250); }
+
+function normalize(d) {
+  if (!d || !Array.isArray(d.lanes) || !d.lanes.length) return null;
+  const lanes = d.lanes.map(l => ({id: String(l.id || uid('l')), name: String(l.name ?? 'Lane'), h: Math.max(80, +l.h || 160)}));
+  const laneIds = new Set(lanes.map(l => l.id));
+  const nodes = (d.nodes || []).filter(n => laneIds.has(String(n.lane))).map(n => {
+    const type = SHAPES[n.type] ? n.type : 'step';
+    return {id: String(n.id || uid('n')), type, lane: String(n.lane), x: +n.x || HEAD + 40, y: +n.y || 10,
+      w: +n.w || SHAPES[type].w, h: +n.h || SHAPES[type].h, label: String(n.label ?? '')};
+  });
+  const nodeIds = new Set(nodes.map(n => n.id));
+  const edges = (d.edges || []).filter(e => nodeIds.has(String(e.from)) && nodeIds.has(String(e.to)) && e.from !== e.to)
+    .map(e => ({id: String(e.id || uid('e')), from: String(e.from), to: String(e.to), label: String(e.label ?? '')}));
+  const s = {title: String(d.title || 'Swimlane diagram'), lanes, nodes, edges};
+  s.nodes.forEach(n => fit(n, s));
+  return s;
+}
+
+const snapshot = () => JSON.stringify(state);
+function pushHistory(snap) {
+  undoStack.push(snap || snapshot()); if (undoStack.length > 120) undoStack.shift(); redoStack = [];
+}
+function undo() { if (!undoStack.length) return; redoStack.push(snapshot()); state = JSON.parse(undoStack.pop()); validateSel(); render(); }
+function redo() { if (!redoStack.length) return; undoStack.push(snapshot()); state = JSON.parse(redoStack.pop()); validateSel(); render(); }
+function validateSel() {
+  if (!sel) return;
+  const ok = sel.kind === 'node' ? nodeById(sel.id) : sel.kind === 'edge' ? state.edges.find(e => e.id === sel.id) : laneById(sel.id);
+  if (!ok) sel = null;
+}
+
+const nodeById = id => state.nodes.find(n => n.id === id);
+const laneById = id => state.lanes.find(l => l.id === id);
+function tops(s = state) { let y = 0; const t = {}; for (const l of s.lanes) { t[l.id] = y; y += l.h; } return {t, total: y}; }
+function absBox(n, T) { return {x: n.x, y: T[n.lane] + n.y, w: n.w, h: n.h}; }
+function fit(n, s = state) {
+  const L = s.lanes.find(l => l.id === n.lane);
+  if (n.h + 20 > L.h) L.h = snap(n.h + 30);
+  n.x = Math.max(HEAD + 12, snap(n.x));
+  n.y = clamp(snap(n.y), 10, L.h - n.h - 10);
+}
+function laneAtY(y) {
+  const {t} = tops(); let hit = state.lanes[state.lanes.length - 1];
+  if (y < 0) return state.lanes[0];
+  for (const l of state.lanes) if (y >= t[l.id] && y < t[l.id] + l.h) { hit = l; break; }
+  return hit;
+}
+function contentW() { let m = 0; for (const n of state.nodes) m = Math.max(m, n.x + n.w); return m; }
+function canvasW() { return Math.max(contentW() + 320, 1100, stage.clientWidth / zoom); }
+
+/* ---------- geometry ---------- */
+function wrap(text, cpl, maxLines) {
+  const out = [];
+  for (const para of String(text).split('\n')) {
+    let line = '';
+    for (let w of para.split(/\s+/).filter(Boolean)) {
+      while (w.length > cpl) { if (line) { out.push(line); line = ''; } out.push(w.slice(0, cpl)); w = w.slice(cpl); }
+      if (!line) line = w; else if ((line + ' ' + w).length <= cpl) line += ' ' + w; else { out.push(line); line = w; }
+    }
+    out.push(line);
+  }
+  while (out.length > 1 && out[out.length - 1] === '') out.pop();
+  if (out.length > maxLines) { const cut = out.slice(0, maxLines); cut[maxLines - 1] = cut[maxLines - 1].slice(0, cpl - 1) + '…'; return cut; }
+  return out;
+}
+function route(A, B, ta, tb) {
+  const inset = (b, t) => t === 'data' ? {x: b.x + 7, y: b.y, w: b.w - 14, h: b.h} : b;
+  A = inset(A, ta); B = inset(B, tb);
+  const ac = {x: A.x + A.w / 2, y: A.y + A.h / 2}, bc = {x: B.x + B.w / 2, y: B.y + B.h / 2};
+  const gapX = Math.max(B.x - (A.x + A.w), A.x - (B.x + B.w));
+  const gapY = Math.max(B.y - (A.y + A.h), A.y - (B.y + B.h));
+  const right = bc.x > ac.x, down = bc.y > ac.y;
+  if (gapX > 20 && gapY > 20) {
+    const sx = right ? A.x + A.w : A.x, ey = down ? B.y : B.y + B.h;
+    return [{x: sx, y: ac.y}, {x: bc.x, y: ac.y}, {x: bc.x, y: ey}];
+  }
+  if (gapX <= 0 && gapY <= 0) return [ac, bc];
+  if (gapX >= gapY) {
+    const sx = right ? A.x + A.w : A.x, ex = right ? B.x : B.x + B.w;
+    const lo = Math.max(A.y, B.y), hi = Math.min(A.y + A.h, B.y + B.h);
+    if (hi - lo > 16) { const y = (lo + hi) / 2; return [{x: sx, y}, {x: ex, y}]; }
+    const mx = (sx + ex) / 2;
+    return [{x: sx, y: ac.y}, {x: mx, y: ac.y}, {x: mx, y: bc.y}, {x: ex, y: bc.y}];
+  }
+  const sy = down ? A.y + A.h : A.y, ey = down ? B.y : B.y + B.h;
+  const lo = Math.max(A.x, B.x), hi = Math.min(A.x + A.w, B.x + B.w);
+  if (hi - lo > 16) { const x = (lo + hi) / 2; return [{x, y: sy}, {x, y: ey}]; }
+  const my = (sy + ey) / 2;
+  return [{x: ac.x, y: sy}, {x: ac.x, y: my}, {x: bc.x, y: my}, {x: bc.x, y: ey}];
+}
+function labelPoint(pts) {
+  let best = 0, bi = 0;
+  for (let i = 0; i < pts.length - 1; i++) { const d = Math.hypot(pts[i + 1].x - pts[i].x, pts[i + 1].y - pts[i].y); if (d > best) { best = d; bi = i; } }
+  return {x: (pts[bi].x + pts[bi + 1].x) / 2, y: (pts[bi].y + pts[bi + 1].y) / 2};
+}
+function edgePts(e, T) {
+  const a = nodeById(e.from), b = nodeById(e.to);
+  return route(absBox(a, T), absBox(b, T), a.type, b.type);
+}
+function portPoints(n) {
+  const {w, h} = n, k = n.type === 'data' ? 7 : 0;
+  return [[w / 2, 0], [w - k, h / 2], [w / 2, h], [k, h / 2]];
+}
+
+/* ---------- rendering ---------- */
+function shapeMarkup(n) {
+  const {w, h} = n, c = 'shape s-' + n.type;
+  if (n.type === 'decision') return `<polygon class="${c}" points="${w/2},0 ${w},${h/2} ${w/2},${h} 0,${h/2}"/>`;
+  if (n.type === 'terminal') return `<rect class="${c}" width="${w}" height="${h}" rx="${h/2}"/>`;
+  if (n.type === 'data') return `<polygon class="${c}" points="14,0 ${w},0 ${w-14},${h} 0,${h}"/>`;
+  return `<rect class="${c}" width="${w}" height="${h}" rx="4"/>`;
+}
+function textMarkup(lines, cx, cy, lh, cls = '') {
+  const y0 = cy - (lines.length - 1) * lh / 2;
+  return `<text ${cls} text-anchor="middle" dominant-baseline="central">${lines.map((l, i) => `<tspan x="${cx}" y="${y0 + i * lh}">${esc(l)}</tspan>`).join('')}</text>`;
+}
+function build(T, W, H, exp, headX = 0) {
+  let o = `<defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r="1"/></pattern>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="9" markerHeight="9" markerUnits="userSpaceOnUse" orient="auto"><path class="arrow" d="M0,0 L10,5 L0,10 z"/></marker>
+    ${exp ? '' : '<marker id="arrowSel" viewBox="0 0 10 10" refX="9.5" refY="5" markerWidth="10" markerHeight="10" markerUnits="userSpaceOnUse" orient="auto"><path class="arrow-sel" d="M0,0 L10,5 L0,10 z"/></marker>'}</defs>`;
+  state.lanes.forEach((l, i) => { o += `<rect class="lane-band${i % 2 ? ' alt' : ''}" x="0" y="${T[l.id]}" width="${W}" height="${l.h}"/>`; });
+  o += `<rect x="0" y="0" width="${W}" height="${H}" fill="url(#dots)" pointer-events="none"/>`;
+  state.lanes.forEach((l, i) => { if (i < state.lanes.length - 1) o += `<line class="lane-rule" x1="0" x2="${W}" y1="${T[l.id] + l.h}" y2="${T[l.id] + l.h}"/>`; });
+  if (!exp) state.lanes.forEach(l => { o += `<rect class="lane-resize" data-lane-resize="${l.id}" x="0" y="${T[l.id] + l.h - 5}" width="${W}" height="10"/>`; });
+
+  for (const e of state.edges) {
+    const pts = edgePts(e, T), d = 'M' + pts.map(p => p.x + ' ' + p.y).join(' L');
+    const s = !exp && sel && sel.kind === 'edge' && sel.id === e.id;
+    o += `<g class="edge${s ? ' sel' : ''}" ${exp ? '' : `data-edge="${e.id}"`}>`;
+    if (!exp) o += `<path class="edge-hit" d="${d}"/>`;
+    o += `<path class="edge-line" d="${d}" marker-end="url(#${s ? 'arrowSel' : 'arrow'})"/>`;
+    if (e.label) { const lp = labelPoint(pts); o += textMarkup(wrap(e.label, 22, 3), lp.x, lp.y, 15, 'class="edge-label"'); }
+    o += `</g>`;
+  }
+  for (const n of state.nodes) {
+    const b = absBox(n, T), s = !exp && sel && sel.kind === 'node' && sel.id === n.id;
+    const tw = n.type === 'decision' ? n.w * 0.56 : n.type === 'data' ? n.w - 40 : n.w - 22;
+    const cpl = Math.max(4, Math.floor(tw / 7.1)), maxL = n.type === 'decision' ? Math.max(1, Math.floor(n.h * 0.5 / 16)) : Math.max(1, Math.floor((n.h - 10) / 16));
+    o += `<g class="node${s ? ' sel' : ''}" ${exp ? '' : `data-node="${n.id}"`} transform="translate(${b.x} ${b.y})">${shapeMarkup(n)}${textMarkup(wrap(n.label, cpl, maxL), n.w / 2, n.h / 2, 16)}`;
+    if (!exp) o += portPoints(n).map(([x, y]) => `<g class="port" data-port="${n.id}"><circle class="ph" cx="${x}" cy="${y}" r="11"/><circle class="pd" cx="${x}" cy="${y}" r="4.5"/></g>`).join('');
+    o += `</g>`;
+  }
+  o += `<g ${exp ? '' : `id="heads" transform="translate(${headX} 0)"`}>`;
+  for (const l of state.lanes) {
+    const s = !exp && sel && sel.kind === 'lane' && sel.id === l.id, y = T[l.id];
+    o += `<g class="lane-head${s ? ' sel' : ''}" ${exp ? '' : `data-lane-head="${l.id}"`}><rect class="hb" x="0" y="${y}" width="${HEAD}" height="${l.h}"/>`;
+    o += `<line class="hr" x1="${HEAD - .5}" x2="${HEAD - .5}" y1="${y}" y2="${y + l.h}"/><line class="hr" x1="0" x2="${HEAD}" y1="${y + l.h - .5}" y2="${y + l.h - .5}"/>`;
+    o += textMarkup(wrap((l.name || 'Untitled lane').toUpperCase(), 13, Math.floor((l.h - 16) / 17)), HEAD / 2, y + l.h / 2, 17);
+    o += `</g>`;
+    if (!exp) o += `<rect class="lane-resize" data-lane-resize="${l.id}" x="0" y="${y + l.h - 5}" width="${HEAD}" height="10"/>`;
+  }
+  o += `</g>`;
+  if (!exp) o += `<path id="temp" class="temp" d=""/>`;
+  return o;
+}
+function render() {
+  const {t: T, total: H} = tops(), W = canvasW();
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.setAttribute('width', W * zoom); svg.setAttribute('height', H * zoom);
+  world.innerHTML = build(T, W, H, false, stage.scrollLeft / zoom);
+  $('#zoomLbl').textContent = Math.round(zoom * 100) + '%';
+  $('#undo').disabled = !undoStack.length; $('#redo').disabled = !redoStack.length;
+  if (!drag) { renderCtx(); persist(); }
+}
+function updateHeads() { const h = $('#heads'); if (h) h.setAttribute('transform', `translate(${stage.scrollLeft / zoom} 0)`); }
+
+function renderCtx() {
+  const c = $('#ctx');
+  if (!sel) { c.innerHTML = `<span class="ctx-hint">Select a lane name, step or connector to edit it. With a step selected, new shapes are added after it and connected.</span>`; return; }
+  if (sel.kind === 'lane') {
+    const i = state.lanes.findIndex(l => l.id === sel.id), l = state.lanes[i];
+    c.innerHTML = `<span class="ctx-kind">Lane</span><span class="ctx-name">${esc(l.name)}</span><div class="ctx-actions">
+      <button class="btn" data-act="rename">Rename</button><button class="btn" data-act="up" ${i === 0 ? 'disabled' : ''}>Move up</button>
+      <button class="btn" data-act="down" ${i === state.lanes.length - 1 ? 'disabled' : ''}>Move down</button>
+      <button class="btn danger" data-act="del" ${state.lanes.length < 2 ? 'disabled title="A diagram needs at least one lane"' : ''}>Delete lane</button></div>`;
+  } else if (sel.kind === 'node') {
+    const n = nodeById(sel.id);
+    c.innerHTML = `<span class="ctx-kind">${SHAPES[n.type].name}</span><span class="ctx-name">${esc(n.label || 'Untitled')}</span><div class="ctx-actions">
+      <select id="shapeSel" aria-label="Shape">${Object.entries(SHAPES).map(([k, v]) => `<option value="${k}" ${k === n.type ? 'selected' : ''}>${v.name}</option>`).join('')}</select>
+      <button class="btn" data-act="rename">Rename</button><button class="btn danger" data-act="del">Delete</button></div>`;
+  } else {
+    const e = state.edges.find(x => x.id === sel.id), a = nodeById(e.from), b = nodeById(e.to);
+    c.innerHTML = `<span class="ctx-kind">Connector</span><span class="ctx-name">${esc(a.label)} → ${esc(b.label)}</span><div class="ctx-actions">
+      <button class="btn" data-act="rename">${e.label ? 'Edit label' : 'Add label'}</button><button class="btn" data-act="reverse">Reverse</button>
+      <button class="btn danger" data-act="del">Delete</button></div>`;
+  }
+}
+
+/* ---------- actions ---------- */
+function select(s) { sel = s; render(); }
+function addLane() {
+  pushHistory(); const l = {id: uid('l'), name: 'New lane', h: 150}; state.lanes.push(l); sel = {kind: 'lane', id: l.id}; render();
+  stage.scrollTop = stage.scrollHeight; startEdit('lane', l.id);
+}
+function overlaps(n) {
+  return state.nodes.some(m => m !== n && m.lane === n.lane && m.x < n.x + n.w + 10 && n.x < m.x + m.w + 10 && m.y < n.y + n.h && n.y < m.y + m.h);
+}
+function addNode(type, at, from) {
+  pushHistory();
+  const s = SHAPES[type], prev = from ? nodeById(from) : (!at && sel && sel.kind === 'node' ? nodeById(sel.id) : null);
+  const n = {id: uid('n'), type, w: s.w, h: s.h, label: s.label, lane: null, x: 0, y: 0};
+  if (at) { n.lane = at.lane; n.x = at.x - s.w / 2; n.y = at.y - s.h / 2; }
+  else if (prev) { n.lane = prev.lane; n.x = prev.x + prev.w + 60; n.y = prev.y + prev.h / 2 - s.h / 2; }
+  else {
+    const lane = sel && sel.kind === 'lane' ? laneById(sel.id) : state.lanes[0];
+    const inLane = state.nodes.filter(m => m.lane === lane.id);
+    n.lane = lane.id; n.x = inLane.length ? Math.max(...inLane.map(m => m.x + m.w)) + 60 : HEAD + 40 + stage.scrollLeft / zoom; n.y = (lane.h - s.h) / 2;
+  }
+  fit(n); let guard = 0; while (!at && overlaps(n) && guard++ < 40) n.x += 40;
+  state.nodes.push(n);
+  if (prev) state.edges.push({id: uid('e'), from: prev.id, to: n.id, label: ''});
+  sel = {kind: 'node', id: n.id}; render();
+  const right = (n.x + n.w) * zoom + 40;
+  if (right > stage.scrollLeft + stage.clientWidth) stage.scrollLeft = right - stage.clientWidth;
+  return n;
+}
+function deleteSel() {
+  if (!sel) return;
+  if (sel.kind === 'node') {
+    pushHistory(); state.nodes = state.nodes.filter(n => n.id !== sel.id);
+    state.edges = state.edges.filter(e => e.from !== sel.id && e.to !== sel.id); toast('Shape deleted');
+  } else if (sel.kind === 'edge') {
+    pushHistory(); state.edges = state.edges.filter(e => e.id !== sel.id); toast('Connector deleted');
+  } else {
+    if (state.lanes.length < 2) return;
+    pushHistory(); const gone = new Set(state.nodes.filter(n => n.lane === sel.id).map(n => n.id));
+    state.lanes = state.lanes.filter(l => l.id !== sel.id); state.nodes = state.nodes.filter(n => !gone.has(n.id));
+    state.edges = state.edges.filter(e => !gone.has(e.from) && !gone.has(e.to));
+    toast(gone.size ? `Lane and ${gone.size} shape${gone.size > 1 ? 's' : ''} deleted` : 'Lane deleted');
+  }
+  sel = null; render();
+}
+function moveLane(dir) {
+  const i = state.lanes.findIndex(l => l.id === sel.id), j = i + dir;
+  if (j < 0 || j >= state.lanes.length) return;
+  pushHistory(); [state.lanes[i], state.lanes[j]] = [state.lanes[j], state.lanes[i]]; render();
+}
+function setZoom(z) {
+  const cx = (stage.scrollLeft + stage.clientWidth / 2) / zoom, cy = (stage.scrollTop + stage.clientHeight / 2) / zoom;
+  zoom = clamp(Math.round(z * 10) / 10, 0.5, 2); render();
+  stage.scrollLeft = cx * zoom - stage.clientWidth / 2; stage.scrollTop = cy * zoom - stage.clientHeight / 2; updateHeads();
+}
+
+/* ---------- toast ---------- */
+let toastT;
+function toast(msg, withUndo = true) {
+  $('#toastMsg').textContent = msg; $('#toastUndo').hidden = !withUndo; $('#toast').hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => { $('#toast').hidden = true; }, 4000);
+}
+$('#toastUndo').addEventListener('click', () => { undo(); $('#toast').hidden = true; });
+
+/* ---------- inline label editor ---------- */
+const ed = $('#editor');
+function toScreen(x, y) { const p = svg.createSVGPoint(); p.x = x; p.y = y; return p.matrixTransform(svg.getScreenCTM()); }
+function toWorld(e) { const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function startEdit(kind, id) {
+  commitEdit();
+  let r, val;
+  if (kind === 'node') {
+    const n = nodeById(id); val = n.label;
+    r = svg.querySelector(`[data-node="${id}"] .shape`).getBoundingClientRect();
+    const w = Math.max(r.width, 150), h = Math.max(r.height, 56);
+    r = {left: r.left + r.width / 2 - w / 2, top: r.top + r.height / 2 - h / 2, width: w, height: h};
+  } else if (kind === 'lane') {
+    const l = laneById(id); val = l.name;
+    const b = svg.querySelector(`[data-lane-head="${id}"] .hb`).getBoundingClientRect();
+    r = {left: b.left + 4, top: b.top + b.height / 2 - 30, width: Math.max(b.width - 8, 128), height: 60};
+  } else {
+    const e = state.edges.find(x => x.id === id); val = e.label;
+    const lp = labelPoint(edgePts(e, tops().t)), s = toScreen(lp.x, lp.y);
+    r = {left: s.x - 70, top: s.y - 22, width: 140, height: 44};
+  }
+  Object.assign(ed.style, {left: r.left + 'px', top: r.top + 'px', width: r.width + 'px', height: r.height + 'px'});
+  ed.value = val; ed.hidden = false; editing = {kind, id};
+  ed.focus(); ed.select();
+}
+function commitEdit(cancel) {
+  if (!editing) return;
+  const {kind, id} = editing; editing = null; ed.hidden = true;
+  if (cancel) return;
+  const v = ed.value.trim();
+  const obj = kind === 'node' ? nodeById(id) : kind === 'lane' ? laneById(id) : state.edges.find(e => e.id === id);
+  if (!obj) return;
+  const key = kind === 'lane' ? 'name' : 'label';
+  if (kind === 'lane' && !v) return;
+  if (obj[key] === v) return;
+  pushHistory(); obj[key] = v; render();
+}
+ed.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); commitEdit(); }
+  else if (e.key === 'Escape') { e.preventDefault(); commitEdit(true); }
+  e.stopPropagation();
+});
+ed.addEventListener('blur', () => commitEdit());
+
+/* ---------- pointer interaction ---------- */
+let lastTap = {key: null, t: 0, x: 0, y: 0};
+function isDouble(key, e) {
+  const now = performance.now();
+  const d = key === lastTap.key && now - lastTap.t < 400 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 14;
+  lastTap = d ? {key: null, t: 0, x: 0, y: 0} : {key, t: now, x: e.clientX, y: e.clientY};
+  return d;
+}
+svg.addEventListener('pointerdown', e => {
+  if (e.button !== 0) return;
+  commitEdit();
+  const t = e.target, p = toWorld(e);
+  const port = t.closest('[data-port]');
+  if (port) {
+    e.preventDefault(); svg.setPointerCapture(e.pointerId);
+    const n = nodeById(port.dataset.port), T = tops().t, c = port.querySelector('.pd');
+    drag = {type: 'connect', from: n.id, sx: n.x + +c.getAttribute('cx'), sy: T[n.lane] + n.y + +c.getAttribute('cy'), moved: 0};
+    return;
+  }
+  const rz = t.closest('[data-lane-resize]');
+  if (rz) { e.preventDefault(); svg.setPointerCapture(e.pointerId); drag = {type: 'resize', lane: rz.dataset.laneResize, snap: snapshot(), changed: false}; return; }
+  const nd = t.closest('[data-node]');
+  if (nd) {
+    e.preventDefault();
+    const id = nd.dataset.node;
+    if (isDouble('n' + id, e)) { startEdit('node', id); return; }
+    const n = nodeById(id), T = tops().t;
+    svg.setPointerCapture(e.pointerId);
+    drag = {type: 'move', id, ox: p.x - n.x, oy: p.y - (T[n.lane] + n.y), snap: snapshot(), changed: false};
+    if (!sel || sel.id !== id) select({kind: 'node', id});
+    return;
+  }
+  const edg = t.closest('[data-edge]');
+  if (edg) {
+    e.preventDefault(); const id = edg.dataset.edge;
+    if (isDouble('e' + id, e)) { startEdit('edge', id); return; }
+    select({kind: 'edge', id}); return;
+  }
+  const lh = t.closest('[data-lane-head]');
+  if (lh) {
+    e.preventDefault(); const id = lh.dataset.laneHead;
+    if (isDouble('l' + id, e)) { startEdit('lane', id); return; }
+    select({kind: 'lane', id}); return;
+  }
+  if (isDouble('empty', e)) {
+    e.preventDefault();
+    const lane = laneAtY(p.y), T = tops().t;
+    addNode('step', {lane: lane.id, x: Math.max(p.x, HEAD + 90), y: p.y - T[lane.id]});
+    startEdit('node', sel.id); return;
+  }
+  if (sel) select(null);
+});
+svg.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const p = toWorld(e), {t: T} = tops();
+  if (drag.type === 'move') {
+    const n = nodeById(drag.id);
+    const ax = p.x - drag.ox, ay = p.y - drag.oy;
+    const lane = laneAtY(ay + n.h / 2);
+    const nx = Math.max(HEAD + 12, snap(ax)), ny = clamp(snap(ay - T[lane.id]), 10, lane.h - n.h - 10);
+    if (nx === n.x && ny === n.y && lane.id === n.lane) return;
+    if (!drag.changed) { pushHistory(drag.snap); drag.changed = true; }
+    n.x = nx; n.y = ny; n.lane = lane.id; render();
+  } else if (drag.type === 'resize') {
+    const L = laneById(drag.lane);
+    const minH = Math.max(80, ...state.nodes.filter(n => n.lane === L.id).map(n => n.y + n.h + 10));
+    const h = Math.max(minH, snap(p.y - T[L.id]));
+    if (h === L.h) return;
+    if (!drag.changed) { pushHistory(drag.snap); drag.changed = true; }
+    L.h = h; render();
+  } else if (drag.type === 'connect') {
+    drag.moved = Math.hypot(p.x - drag.sx, p.y - drag.sy);
+    $('#temp').setAttribute('d', `M${drag.sx} ${drag.sy} L${p.x} ${p.y}`);
+  }
+});
+function endDrag(e) {
+  if (!drag) return;
+  const d = drag; drag = null;
+  if (d.type === 'connect') {
+    const el = document.elementFromPoint(e.clientX, e.clientY);
+    const nd = el && el.closest && el.closest('[data-node]');
+    if (nd && nd.dataset.node !== d.from) {
+      const to = nd.dataset.node;
+      if (!state.edges.some(x => x.from === d.from && x.to === to)) {
+        pushHistory(); const edge = {id: uid('e'), from: d.from, to, label: ''}; state.edges.push(edge); sel = {kind: 'edge', id: edge.id};
+      }
+    } else if (!nd && d.moved > 40 && el && svg.contains(el) && e.type === 'pointerup') {
+      const p = toWorld(e), T = tops().t, H = tops().total;
+      if (p.y >= 0 && p.y <= H && p.x > stage.scrollLeft / zoom + HEAD) {
+        const lane = laneAtY(p.y);
+        addNode('step', {lane: lane.id, x: p.x, y: p.y - T[lane.id]}, d.from);
+        startEdit('node', sel.id); return;
+      }
+    }
+  }
+  render();
+}
+svg.addEventListener('pointerup', endDrag);
+svg.addEventListener('pointercancel', endDrag);
+stage.addEventListener('scroll', () => { updateHeads(); if (editing) commitEdit(); });
+stage.addEventListener('wheel', e => { if (e.ctrlKey || e.metaKey) { e.preventDefault(); setZoom(zoom * (e.deltaY < 0 ? 1.1 : 0.9)); } }, {passive: false});
+window.addEventListener('resize', () => render());
+
+/* ---------- toolbar & context bar ---------- */
+$('#addLane').addEventListener('click', addLane);
+document.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', () => addNode(b.dataset.add)));
+$('#undo').addEventListener('click', undo); $('#redo').addEventListener('click', redo);
+$('#zoomIn').addEventListener('click', () => setZoom(zoom + 0.1)); $('#zoomOut').addEventListener('click', () => setZoom(zoom - 0.1));
+$('#newBtn').addEventListener('click', () => {
+  pushHistory(); state = {title: 'Swimlane diagram', lanes: [{id: uid('l'), name: 'Lane 1', h: 150}, {id: uid('l'), name: 'Lane 2', h: 150}], nodes: [], edges: []};
+  sel = null; render(); toast('Started a blank diagram');
+});
+$('#ctx').addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b || !sel) return;
+  const a = b.dataset.act;
+  if (a === 'rename') startEdit(sel.kind, sel.id);
+  else if (a === 'del') deleteSel();
+  else if (a === 'up') moveLane(-1);
+  else if (a === 'down') moveLane(1);
+  else if (a === 'reverse') { const ed2 = state.edges.find(x => x.id === sel.id); pushHistory(); [ed2.from, ed2.to] = [ed2.to, ed2.from]; render(); }
+});
+$('#ctx').addEventListener('change', e => {
+  if (e.target.id !== 'shapeSel' || !sel) return;
+  const n = nodeById(sel.id), s = SHAPES[e.target.value];
+  pushHistory(); const cx = n.x + n.w / 2, cy = n.y + n.h / 2;
+  n.type = e.target.value; n.w = s.w; n.h = s.h; n.x = cx - s.w / 2; n.y = cy - s.h / 2; fit(n); render();
+});
+document.addEventListener('keydown', e => {
+  if (!$('#dlg').hidden) { if (e.key === 'Escape') closeDlg(); return; }
+  const tag = e.target.tagName;
+  if (tag === 'TEXTAREA' || tag === 'INPUT' || tag === 'SELECT') return;
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+  if (mod && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
+  if (!sel) return;
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); deleteSel(); }
+  else if (e.key === 'Enter' && tag !== 'BUTTON') { e.preventDefault(); startEdit(sel.kind, sel.id); }
+  else if (e.key === 'Escape') select(null);
+  else if (sel.kind === 'node' && e.key.startsWith('Arrow')) {
+    e.preventDefault(); const n = nodeById(sel.id); pushHistory();
+    const st = e.shiftKey ? 40 : GRID;
+    if (e.key === 'ArrowLeft') n.x -= st; if (e.key === 'ArrowRight') n.x += st;
+    if (e.key === 'ArrowUp') n.y -= st; if (e.key === 'ArrowDown') n.y += st;
+    fit(n); render();
+  }
+});
+
+/* ---------- export / import dialog ---------- */
+let dlgMode = 'export', fmt = 'svg';
+function exportSVG() {
+  const {t: T, total: H} = tops(), W = Math.max(contentW() + 40, HEAD + 240);
+  const saved = sel; sel = null;
+  const body = build(T, W, H, true); sel = saved;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><style>${svgCss(LIGHT)}</style>${body.replace(/\s+\n\s*/g, '')}</svg>`;
+}
+function fillExport() {
+  document.querySelectorAll('#dlgSeg button').forEach(b => b.setAttribute('aria-pressed', b.dataset.fmt === fmt));
+  $('#dlgText').value = fmt === 'svg' ? exportSVG() : JSON.stringify(state, null, 2);
+  $('#dlgNote').textContent = fmt === 'svg'
+    ? 'Copy this SVG and paste it into a file ending in .svg, or straight into Figma, PowerPoint, Word or a web page. It uses the light colour scheme.'
+    : 'Copy this JSON to keep a backup or move the diagram to another browser. Paste it back in with Import.';
+}
+function openDlg(mode) {
+  dlgMode = mode; $('#dlgErr').hidden = true;
+  const exp = mode === 'export';
+  $('#dlgTitle').textContent = exp ? 'Export diagram' : 'Import diagram';
+  $('#dlgSeg').hidden = !exp; $('#dlgCopy').hidden = !exp; $('#dlgLoad').hidden = exp; $('#fileWrap').hidden = exp;
+  $('#dlgText').readOnly = exp;
+  if (exp) fillExport();
+  else { $('#dlgText').value = ''; $('#dlgNote').textContent = 'Paste JSON from a previous export, or choose a .json file. This replaces the current diagram; Undo brings it back.'; }
+  $('#dlg').hidden = false; (exp ? $('#dlgCopy') : $('#dlgText')).focus();
+}
+function closeDlg() { $('#dlg').hidden = true; }
+$('#exportBtn').addEventListener('click', () => openDlg('export'));
+$('#importBtn').addEventListener('click', () => openDlg('import'));
+$('#dlgClose').addEventListener('click', closeDlg);
+$('#dlg').addEventListener('click', e => { if (e.target.id === 'dlg') closeDlg(); });
+$('#dlgSeg').addEventListener('click', e => { const b = e.target.closest('[data-fmt]'); if (b) { fmt = b.dataset.fmt; fillExport(); } });
+$('#dlgCopy').addEventListener('click', () => {
+  const ta = $('#dlgText');
+  const fallback = () => { ta.focus(); ta.select(); $('#dlgCopy').textContent = 'Press Ctrl+C to copy'; };
+  try {
+    navigator.clipboard.writeText(ta.value).then(() => { $('#dlgCopy').textContent = 'Copied'; setTimeout(() => $('#dlgCopy').textContent = 'Copy', 1600); }, fallback);
+  } catch (err) { fallback(); }
+});
+function loadText(txt) {
+  let d; try { d = JSON.parse(txt); } catch (err) { showErr('That text is not valid JSON. Paste the whole export, from the first { to the last }.'); return; }
+  const s = normalize(d);
+  if (!s) { showErr('No lanes found. The JSON needs a "lanes" list, as produced by Export → JSON data.'); return; }
+  pushHistory(); state = s; sel = null; render(); closeDlg(); toast('Diagram loaded');
+}
+function showErr(m) { $('#dlgErr').textContent = m; $('#dlgErr').hidden = false; }
+$('#dlgLoad').addEventListener('click', () => loadText($('#dlgText').value));
+$('#fileIn').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader(); r.onload = () => { $('#dlgText').value = r.result; loadText(r.result); }; r.readAsText(f); e.target.value = '';
+});
+
+/* ---------- boot ---------- */
+state = load();
+render();
+})();
+</script>
+
+</body></html>
