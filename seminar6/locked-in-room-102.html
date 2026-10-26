@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}img{max-width:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}</style>
+</head>
+<body>
+<title>Locked In 102</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Patrick+Hand&family=VT323&display=swap">
+<style>
+/* Layout: one phone-sized stage; a flat illustrated seminar room with tappable objects, paper sheets slide up from the bottom. */
+:root{
+  --ink:#18202e;        /* corridor-dark chrome */
+  --ink-2:#232d40;
+  --wall:#c7d0cb;       /* institutional sage wall */
+  --wall-shade:#b3beb8;
+  --floor:#4a5870;      /* campus carpet blue */
+  --paper:#f7f8f4;
+  --paper-line:#dde2dc;
+  --text:#1b2230;
+  --muted:#5d6878;
+  --chrome-text:#e9edf2;
+  --chrome-muted:#9aa6b8;
+  --sticky:#ffe55a;
+  --sticky-edge:#e8c93a;
+  --metal:#9aa3b0;
+  --metal-dark:#5f6878;
+  --lcd:#b9d4a5;
+  --lcd-ink:#21321a;
+  --go:#1f9d55;
+  --stop:#d64545;
+  --accent:#ffb020;     /* safety-sign amber */
+  --coffee:rgba(120,72,30,.55);
+  --f-display:"Bricolage Grotesque", "Arial Narrow", system-ui, sans-serif;
+  --f-body:"Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-hand:"Patrick Hand", "Atkinson Hyperlegible", system-ui, sans-serif;
+  --f-lcd:"VT323", ui-monospace, "Courier New", monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--chrome-text);font-family:var(--f-body);font-size:16px;line-height:1.5;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+#app{height:100%;max-width:520px;margin:0 auto;position:relative;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+.screen{position:absolute;inset:0;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:20px;display:flex;flex-direction:column;overflow-y:auto}
+.screen[hidden]{display:none!important}
+
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0}
+p{margin:0}
+.btn{border:0;border-radius:12px;padding:14px 22px;font-weight:700;font-size:17px;background:var(--accent);color:#1d1606;box-shadow:0 3px 0 #b27609;transition:transform .08s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 #b27609}
+.btn.ghost{background:transparent;color:var(--chrome-text);box-shadow:inset 0 0 0 2px var(--ink-2)}
+.btn.small{padding:9px 14px;font-size:15px}
+
+/* Title */
+#s-title{justify-content:center;gap:28px}
+.door-sign{background:var(--paper);color:var(--text);border-radius:6px;padding:26px 22px 22px;position:relative;box-shadow:0 18px 40px rgba(0,0,0,.4)}
+.door-sign .room-no{font-family:var(--f-display);font-weight:800;font-size:15px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.door-sign h1{font-size:clamp(56px,17vw,84px);font-weight:800;line-height:.9;letter-spacing:-.02em;margin-top:8px}
+.door-sign .sub{font-family:var(--f-display);font-weight:500;font-size:18px;margin-top:12px}
+.door-sign .tag{margin-top:18px;color:var(--muted)}
+.door-sign .pin{position:absolute;top:10px;right:12px;width:12px;height:12px;border-radius:50%;background:var(--stop);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.mini-pad{display:grid;grid-template-columns:repeat(3,22px);gap:5px;position:absolute;right:20px;bottom:20px}
+.mini-pad span{height:18px;border-radius:4px;background:var(--paper-line)}
+.title-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.title-actions #b-sound-title{grid-column:1/-1}
+.restart-actions{display:flex;flex-wrap:wrap;gap:10px}
+.btn.ghost-dark{background:var(--paper-line);color:var(--text);box-shadow:none}
+.mode-badge{display:inline-block;vertical-align:middle;margin-left:10px;font-family:var(--f-body);font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 9px;border-radius:20px;background:var(--go);color:#fff;line-height:1.3}
+.mode-badge.hard{background:var(--stop)}
+.mode-badge.story{align-self:flex-start;margin-left:0}
+.plain{display:block;font-size:1em}
+
+/* Story */
+#s-story{gap:18px;justify-content:center}
+.story-card{background:var(--paper);color:var(--text);border-radius:10px;padding:24px 22px;display:flex;flex-direction:column;gap:14px;font-size:17px}
+.story-card .time{font-family:var(--f-display);font-weight:800;font-size:22px}
+.story-card .beat{font-family:var(--f-display);font-weight:800;font-size:24px}
+.story-card .sign{font-style:italic}
+.story-card .limit{font-weight:700;border-top:1px solid var(--paper-line);padding-top:14px}
+
+/* Room */
+#s-room{padding-block:10px 12px;gap:8px;overflow:hidden}
+.topbar{display:flex;align-items:center;gap:8px}
+.clock{display:flex;flex-direction:column;flex:1;min-width:0}
+.clock .t{font-family:var(--f-lcd);font-size:34px;line-height:1;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.clock .bar{height:4px;background:var(--ink-2);border-radius:2px;margin-top:4px;overflow:hidden}
+.clock .bar i{display:block;height:100%;background:var(--accent);width:100%;transition:width 1s linear}
+.clock.late .t{color:var(--stop)}
+.clock.late .bar i{background:var(--stop)}
+.tb-btn{background:var(--ink-2);border:0;border-radius:10px;padding:9px 12px;font-weight:700;font-size:14px;white-space:nowrap}
+.tb-btn .n{display:inline-block;min-width:18px;border-radius:9px;background:var(--accent);color:#1d1606;font-size:12px;margin-left:4px;padding:0 5px}
+.tb-btn.icon{padding:9px 10px;color:var(--chrome-muted)}
+.stage{flex:1;min-height:0;container-type:size;display:grid;place-items:center}
+.room{position:relative;width:min(100cqw, 75cqh);height:min(133.333cqw, 100cqh);border-radius:14px;overflow:hidden;background:linear-gradient(var(--wall) 0 63%, var(--floor) 63% 100%)}
+.room::before{content:"";position:absolute;left:0;right:0;top:61%;height:2%;background:var(--wall-shade)}
+.room::after{content:"";position:absolute;inset:63% 0 0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.03) 0 6px,transparent 6px 12px)}
+.caption{text-align:center;color:var(--chrome-muted);font-size:14px}
+
+.hs{position:absolute;border:0;padding:0;background:none;z-index:2}
+.hs .lbl{position:absolute;left:50%;transform:translateX(-50%);bottom:-26px;white-space:nowrap;background:var(--ink);color:var(--chrome-text);font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px;pointer-events:none}
+.hs .dot{position:absolute;top:-5px;right:-5px;width:12px;height:12px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(255,176,32,.7);animation:pulse 1.8s infinite}
+.hs.seen .dot{display:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,176,32,.7)}70%{box-shadow:0 0 0 10px rgba(255,176,32,0)}100%{box-shadow:0 0 0 0 rgba(255,176,32,0)}}
+
+/* illustrated objects */
+.wb{left:5%;top:7%;width:54%;height:27%}
+.wb .face{position:absolute;inset:0;background:#fdfdfb;border:5px solid #a9b1ba;border-radius:4px;overflow:hidden}
+.wb .face b{position:absolute;left:8%;top:14%;width:55%;height:6%;background:#c9d4e8;border-radius:3px}
+.wb .face b:nth-child(2){top:30%;width:40%;background:#d9e1ee}
+.wb .face b:nth-child(3){top:62%;width:70%;background:#2f5fb3;height:5%}
+.wb .face b:nth-child(4){top:72%;width:70%;background:#2f5fb3;height:2%}
+.wb .face s{position:absolute;right:9%;top:52%;width:10%;height:24%;border:2px solid #2f5fb3;border-radius:3px}
+.wb .tray{position:absolute;left:10%;right:10%;bottom:-4px;height:5px;background:#8e97a1;border-radius:2px}
+
+.win{left:69%;top:7%;width:25%;height:21%}
+.win .face{position:absolute;inset:0;background:linear-gradient(170deg,#a9c6e0,#dbe7f1);border:5px solid #eef1ee;border-radius:3px;box-shadow:inset 0 0 0 2px #b9c3c0}
+.win .face::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:4px;margin-left:-2px;background:#eef1ee}
+.win .face::after{content:"";position:absolute;left:12%;bottom:12%;width:30%;height:22%;background:#8aa4bc;border-radius:2px 2px 0 0;box-shadow:24px 6px 0 -2px #93acc2}
+
+.door{left:68%;top:32%;width:27%;height:49%}
+.door .face{position:absolute;inset:0;background:#7a5a3e;border-radius:3px 3px 0 0;box-shadow:inset 0 0 0 4px #5c4330, -3px 0 0 #e6ebe6, 3px 0 0 #e6ebe6, 0 -3px 0 #e6ebe6}
+.door .face::before{content:"";position:absolute;left:22%;top:10%;width:56%;height:22%;background:#a9c6e0;border:3px solid #5c4330}
+.door .face::after{content:"";position:absolute;left:10%;top:52%;width:9%;height:3%;background:#c9ced6;border-radius:2px}
+.door .card-on{position:absolute;left:28%;top:40%;width:44%;height:16%;background:#fff;border-radius:2px;box-shadow:0 1px 2px rgba(0,0,0,.3);transform:rotate(-3deg)}
+.door .card-on i{display:block;height:2px;margin:12% 12% 0;background:#c3cad3}
+
+.card-hs{left:76%;top:50%;width:13%;height:9%}
+
+.kp{left:57%;top:47%;width:8.5%;height:11%}
+.kp .face{position:absolute;inset:0;background:linear-gradient(#b4bcc7,#8b94a2);border-radius:4px;box-shadow:0 2px 3px rgba(0,0,0,.3);display:grid;grid-template-columns:repeat(3,1fr);gap:8%;padding:22% 12% 10%}
+.kp .face::before{content:"";position:absolute;left:14%;right:14%;top:7%;height:10%;background:var(--lcd);border-radius:1px}
+.kp .face i{background:#e8ecf1;border-radius:1px}
+.exit-btn{position:absolute;left:58.5%;top:61%;width:5.5%;height:4%;background:#3a9a5a;border-radius:3px;opacity:.6;box-shadow:inset 0 0 0 2px #2c7a46}
+.exit-btn::after{content:"";position:absolute;left:-15%;right:-15%;top:120%;height:80%;background:#fff;border-radius:1px}
+
+.lect{left:6%;top:47%;width:36%;height:38%}
+.lect .desk{position:absolute;left:4%;right:4%;top:44%;bottom:0;background:#8a6a4a;border-radius:4px 4px 0 0;box-shadow:inset 0 6px 0 #9d7b58}
+.lect .mon{position:absolute;left:12%;width:76%;top:0;height:40%;background:#22262d;border-radius:4px;border:4px solid #3a3f48}
+.lect .mon::before{content:"";position:absolute;inset:6%;background:#2d4f7a;border-radius:2px}
+.lect .stand{position:absolute;left:45%;width:10%;top:39%;height:6%;background:#3a3f48}
+.lect .nt{position:absolute;width:20%;height:22%;background:var(--sticky);box-shadow:0 1px 1px rgba(0,0,0,.25)}
+.lect .nt:nth-of-type(1){left:6%;top:-6%;transform:rotate(-8deg)}
+.lect .nt:nth-of-type(2){left:70%;top:-4%;transform:rotate(7deg)}
+.lect .nt:nth-of-type(3){left:72%;top:22%;transform:rotate(-5deg)}
+.lect .nt:nth-of-type(4){left:4%;top:24%;transform:rotate(6deg);background:#ffd36b}
+
+.chairs{position:absolute;left:4%;right:4%;bottom:3%;height:8%;display:flex;gap:4%;z-index:1}
+.chairs span{flex:1;background:#2c3646;border-radius:6px 6px 2px 2px}
+
+/* Sheet */
+.scrim{position:fixed;inset:0;background:rgba(10,14,22,.6);z-index:20;opacity:0;transition:opacity .2s}
+.scrim.on{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:21;max-width:520px;margin:0 auto;max-height:88%;display:flex;flex-direction:column;background:var(--paper);color:var(--text);border-radius:18px 18px 0 0;transform:translateY(100%);transition:transform .28s cubic-bezier(.2,.8,.2,1);padding-bottom:env(safe-area-inset-bottom, 0px)}
+.sheet.on{transform:none}
+.sheet-head{display:flex;align-items:center;gap:12px;padding:16px max(18px, env(safe-area-inset-right, 0px)) 10px max(18px, env(safe-area-inset-left, 0px));border-bottom:1px solid var(--paper-line)}
+.sheet-head h2{font-size:21px;font-weight:800;flex:1}
+.close{border:0;background:var(--paper-line);border-radius:50%;width:36px;height:36px;font-size:20px;line-height:1;color:var(--text)}
+.sheet-body{overflow-y:auto;padding:16px max(18px, env(safe-area-inset-right, 0px)) 22px max(18px, env(safe-area-inset-left, 0px));display:flex;flex-direction:column;gap:14px}
+.sheet-body .flav{color:var(--muted)}
+.sheet .btn{align-self:flex-start}
+.sheet .btn.done{background:var(--paper-line);color:var(--muted);box-shadow:none}
+
+/* laminated card */
+.lam{background:#fff;border:1px solid var(--paper-line);border-radius:8px;padding:16px;box-shadow:0 2px 0 var(--paper-line),inset 0 0 0 6px rgba(200,215,230,.25);position:relative;overflow:hidden}
+.lam h3{font-size:14px;letter-spacing:.12em;text-transform:uppercase;font-weight:800}
+.lam p{font-size:15px;margin-top:8px}
+.chart{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px 8px;margin-top:14px;font-family:var(--f-lcd);font-size:24px;line-height:1}
+.chart .row{display:flex;gap:6px;align-items:baseline;position:relative}
+.chart .row b{font-family:var(--f-display);font-size:17px;color:var(--muted);width:14px}
+.chart .row span{width:14px;text-align:center}
+.chart .row span.q{color:#b6bdc6}
+.chart .row.stain::after{content:"";position:absolute;left:12px;right:-6px;top:-8px;bottom:-8px;border-radius:50% 45% 55% 40%;background:radial-gradient(circle at 40% 45%,var(--coffee),rgba(120,72,30,.35) 55%,rgba(120,72,30,.15) 70%,transparent 72%)}
+.chart .row span{position:relative;z-index:1}
+.chart .row.blur{filter:blur(3.5px);opacity:.5;user-select:none}
+.chart .row.stain span.q{color:transparent}
+.scratch{position:absolute;right:-10px;top:-10px;width:60px;height:60px;background:repeating-linear-gradient(45deg,transparent 0 4px,rgba(0,0,0,.05) 4px 6px);border-radius:50%}
+
+/* sticky notes */
+.monitor-board{background:#22262d;border-radius:10px;padding:18px 14px;display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.sn{background:var(--sticky);color:#2a2310;font-family:var(--f-hand);font-size:21px;font-weight:400;line-height:1.15;padding:12px 10px 16px;box-shadow:0 3px 6px rgba(0,0,0,.35);min-height:96px;display:flex;flex-direction:column;gap:2px}
+.sn small{font-size:16px;font-weight:400}
+.sn:nth-child(1){transform:rotate(-2deg)}
+.sn:nth-child(2){transform:rotate(1.5deg)}
+.sn:nth-child(3){transform:rotate(-1deg)}
+.sn:nth-child(4){transform:rotate(2.5deg);background:#ffd36b}
+.sn .tick{color:var(--go)}
+.pair{display:flex;flex-wrap:wrap;gap:2px 5px;margin-top:2px}
+.pair>span{display:flex;flex-direction:column;align-items:center;line-height:1}
+.pair b{font-weight:400}
+.pair i{font-style:normal;font-size:.85em;border-top:1.5px solid currentColor;padding-top:2px;margin-top:1px;min-width:.8em;text-align:center}
+.refline small{display:block;font-size:15px;font-weight:400}
+.refline.now{background:#ffd36b}
+.word-now{display:block;font-size:21px;letter-spacing:.04em}
+.ref.compact{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.ref.compact .refline{font-size:18px;padding:4px 6px}
+.ref.compact .refline small{font-size:14px}
+.ref.compact .word-now{font-size:19px}
+.lam.compact{padding:10px 12px;box-shadow:none}
+.lam.compact .chart{margin-top:0;font-size:19px;gap:6px}
+.lam.compact .chart .row b{font-size:14px}
+.kp-notes{display:flex;flex-direction:column;gap:8px}
+.lock.tight{padding:12px}
+.lock.tight .lcd{margin-top:8px;height:44px;font-size:34px}
+.lock.tight .keys{gap:8px;margin-top:10px}
+.lock.tight .keys button{height:46px;font-size:22px}
+.lock.tight .sticker{display:none}
+
+/* whiteboard sheet */
+.wb-big{background:#fdfdfb;border:6px solid #a9b1ba;border-radius:6px;padding:18px 16px;min-height:150px;position:relative;font-family:var(--f-hand);font-size:21px;color:#2f5fb3;line-height:1.15}
+.wb-big .ghost{color:#c9d4e8}
+.wb-big .main{margin-top:26px;text-decoration:underline double;text-underline-offset:5px}
+.wb-big .lock{display:inline-block;vertical-align:middle;margin-left:8px}
+
+/* notes */
+.notes-hint{color:var(--muted);font-size:15px}
+.tracker{background:#fff;border:1px solid var(--paper-line);border-radius:10px;padding:12px}
+.tracker .lab{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tracker .word{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tracker .cell{width:34px;text-align:center;border-radius:6px;background:var(--paper);border:1px solid var(--paper-line);padding:4px 0}
+.tracker .cell b{display:block;font-family:var(--f-display);font-size:18px}
+.tracker .cell i{display:block;font-style:normal;font-family:var(--f-lcd);font-size:22px;line-height:1;height:22px;color:var(--go)}
+.ref{display:flex;flex-direction:column;gap:6px}
+.ref .refline{background:var(--sticky);font-family:var(--f-hand);font-size:19px;font-weight:400;padding:4px 10px;border-radius:2px;color:#2a2310}
+.az{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.az button{border:1px solid var(--paper-line);background:#fff;border-radius:8px;padding:5px 0 4px;display:flex;flex-direction:column;align-items:center;color:var(--text)}
+.az button b{font-family:var(--f-display);font-size:17px;line-height:1.1}
+.az button i{font-style:normal;font-family:var(--f-lcd);font-size:21px;line-height:1;height:20px;color:var(--go)}
+.az button.locked i{color:var(--muted)}
+.az button.locked{background:var(--paper)}
+.az button.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.picker{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;background:var(--ink);padding:10px;border-radius:12px}
+.picker .plab{grid-column:1/-1;color:var(--chrome-text);font-size:14px}
+.picker button{border:0;border-radius:8px;background:var(--ink-2);color:var(--chrome-text);font-family:var(--f-lcd);font-size:26px;padding:4px 0}
+.picker button.clr{font-family:var(--f-body);font-size:14px;font-weight:700}
+.empty{background:#fff;border:1px dashed var(--paper-line);border-radius:10px;padding:12px;color:var(--muted);font-size:15px}
+
+/* keypad sheet */
+.lock{background:linear-gradient(160deg,#c3cad4,#8d96a4);border-radius:18px;padding:18px;box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 8px 18px rgba(0,0,0,.25);max-width:320px;width:100%;align-self:center}
+.lock .brand{display:flex;justify-content:space-between;align-items:center;font-family:var(--f-display);font-weight:800;font-size:15px;color:#2a313d;letter-spacing:.04em}
+.led{width:12px;height:12px;border-radius:50%;background:#7a1e1e;box-shadow:inset 0 0 0 2px rgba(0,0,0,.2)}
+.led.red{background:var(--stop);box-shadow:0 0 10px var(--stop)}
+.led.green{background:#3be07f;box-shadow:0 0 12px #3be07f}
+.lcd{margin-top:12px;background:var(--lcd);color:var(--lcd-ink);font-family:var(--f-lcd);font-size:40px;letter-spacing:.18em;text-align:right;padding:4px 12px;border-radius:6px;box-shadow:inset 0 2px 4px rgba(0,0,0,.3);height:52px;overflow:hidden;font-variant-numeric:tabular-nums}
+.lcd.ok{background:#9be0b2}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.keys button{border:0;border-radius:12px;background:linear-gradient(#f4f6f8,#d8dde3);color:#20262f;font-family:var(--f-display);font-weight:800;font-size:26px;height:58px;box-shadow:0 4px 0 #6d7684,0 5px 8px rgba(0,0,0,.2);transition:transform .06s, box-shadow .06s}
+.keys button:active,.keys button.press{transform:translateY(3px);box-shadow:0 1px 0 #6d7684}
+.keys button.fn{font-family:var(--f-body);font-size:15px;font-weight:700}
+.keys button.enter{background:linear-gradient(#ffc24d,#f0a21a);color:#2a1a02}
+.lock .sticker{margin-top:12px;font-size:12px;color:#2a313d;font-style:italic;text-align:center}
+.kp-msg{min-height:48px;text-align:center;font-weight:700}
+.kp-msg.bad{color:var(--stop)}
+.kp-msg.near{color:#a8670a}
+.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:none}20%{transform:translateX(-9px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(4px)}}
+
+/* hints */
+.hint{background:#fff;border-left:4px solid var(--accent);border-radius:6px;padding:12px 14px}
+.hint b{display:block;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* door opening overlay */
+.opening{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--ink);pointer-events:none;opacity:0;transition:opacity .4s}
+.opening.on{opacity:1}
+.opening .pane{width:min(70vw,260px);aspect-ratio:1/2;position:relative;background:#f3f1ea;box-shadow:0 0 80px rgba(255,240,200,.5);overflow:hidden;border:6px solid #e6ebe6}
+.opening .leaf{position:absolute;inset:0;background:#7a5a3e;box-shadow:inset 0 0 0 6px #5c4330;transform-origin:left;transition:transform 1.2s cubic-bezier(.5,0,.3,1) .3s}
+.opening.on .leaf{transform:perspective(600px) rotateY(-80deg)}
+
+/* endings */
+#s-end{justify-content:center;gap:20px}
+.end-card{background:var(--paper);color:var(--text);border-radius:10px;padding:24px 22px;display:flex;flex-direction:column;gap:14px;font-size:17px}
+.end-card .big{font-family:var(--f-display);font-weight:800;font-size:26px;line-height:1.15}
+.end-card .quote{font-style:italic}
+.end-card .secret{font-family:var(--f-hand);font-size:24px;font-weight:400;line-height:1.15;background:var(--sticky);color:#2a2310;padding:12px 14px;transform:rotate(-1.5deg);box-shadow:0 3px 6px rgba(0,0,0,.2);align-self:flex-start}
+.end-card.ok{box-shadow:inset 0 6px 0 var(--go)}
+.end-card.late{box-shadow:inset 0 6px 0 var(--stop)}
+
+/* debrief */
+#s-debrief{gap:16px}
+.stats{display:flex;flex-wrap:wrap;gap:8px}
+.stats span{background:var(--ink-2);border-radius:20px;padding:6px 12px;font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.thesis{font-family:var(--f-display);font-weight:800;font-size:clamp(26px,7.5vw,34px);line-height:1.1}
+.thesis em{font-style:normal;color:var(--accent)}
+.cards{display:flex;flex-direction:column;gap:12px}
+.dcard{background:var(--paper);color:var(--text);border-radius:10px;padding:16px 18px;display:grid;grid-template-columns:auto 1fr;gap:4px 12px}
+.dcard .no{grid-row:span 2;font-family:var(--f-lcd);font-size:32px;line-height:1;color:var(--muted)}
+.dcard h3{font-size:18px;font-weight:800}
+.dcard p{font-size:15.5px;color:#2f3846}
+.d-actions{padding-block:6px 16px}
+.dcard .src{display:block;margin-top:6px;font-size:13px;font-weight:700;color:var(--muted)}
+.refs{border-top:1px solid var(--ink-2);padding-top:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;color:var(--chrome-muted)}
+.refs h3{font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--chrome-text)}
+.refs ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.refs a{color:var(--accent)}
+.door-sign .fiction{margin-top:10px;font-size:13px;color:var(--muted);max-width:75%}
+.lam-foot{margin-top:12px!important;font-size:12px!important;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom, 0px));transform:translate(-50%,20px);background:var(--go);color:#fff;font-weight:700;padding:10px 18px;border-radius:24px;z-index:40;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none!important;transition:none!important}
+}
+</style>
+
+<div id="app">
+
+  <section class="screen" id="s-title">
+    <div class="door-sign">
+      <span class="pin"></span>
+      <div class="room-no">Education Building · Room 102</div>
+      <h1>LOCKED<br>IN</h1>
+      <div class="sub">A Digital Business Management escape room</div>
+      <p class="tag">Work out the door code before time runs out.</p>
+      <p class="fiction">Set in Liverpool Business School, LJMU. The keypad is fictional.</p>
+      <div class="mini-pad" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    </div>
+    <div class="title-actions">
+      <button class="btn" id="b-easy">Easy</button>
+      <button class="btn" id="b-hard">Hard</button>
+      <button class="btn ghost small" id="b-sound-title" aria-pressed="false">Sound: off</button>
+    </div>
+  </section>
+
+  <section class="screen" id="s-story" hidden>
+    <div class="story-card">
+      <span class="mode-badge story" id="mode-story">Easy</span>
+      <div class="time">13:15, Monday of Week 6. Education Building, Room 102.</div>
+      <p>Your Digital Business Management seminar started fifteen minutes ago. Dr Biały hasn't arrived, the projector shows the university logo on a loop, and your Teams message has been read by nobody. Fifteen minutes is the rule. Outside, the heavy rain still hasn't stopped. You get up to leave.</p>
+      <p class="beat">The door doesn't open.</p>
+      <p>Since last month, every seminar room in the Education Building has a SmartLock keypad, on the inside too. The green exit button carries a printed sign: <span class="sign">"Disabled during Smart Campus pilot."</span> The keypad has nine digits and nothing else.</p>
+      <p>You reach for your phone to ask for help. The screen flashes a red battery icon and goes black. No calls, no search, no AI. Just you, the room and whatever you can work out yourself.</p>
+      <p class="limit">You have 15 minutes.</p>
+    </div>
+    <button class="btn" id="b-look">Look around</button>
+  </section>
+
+  <section class="screen" id="s-room" hidden>
+    <div class="topbar">
+      <div class="clock" id="clock"><span class="t"><span id="clock-t">15:00</span><span class="mode-badge" id="mode-room">Easy</span></span><span class="bar"><i id="clock-bar"></i></span></div>
+      <button class="tb-btn" id="b-notes">Notes</button>
+      <button class="tb-btn" id="b-hint">Hint<span class="n" id="hint-n">2</span></button>
+      <button class="tb-btn icon" id="b-sound" aria-pressed="false" aria-label="Sound off">♪̸</button>
+      <button class="tb-btn icon" id="b-restart" aria-label="Restart">↺</button>
+    </div>
+    <div class="stage">
+      <div class="room" id="room">
+        <button class="hs wb" data-hs="whiteboard" aria-label="Whiteboard"><span class="face"><b></b><b></b><b></b><b></b><s></s></span><span class="tray"></span><span class="dot"></span><span class="lbl">Whiteboard</span></button>
+        <button class="hs win" data-hs="window" aria-label="Window"><span class="face"></span><span class="dot"></span><span class="lbl">Window</span></button>
+        <div class="hs door" style="pointer-events:none" aria-hidden="true"><span class="face"></span><span class="card-on"><i></i><i></i><i></i></span></div>
+        <button class="hs card-hs" data-hs="card" aria-label="Laminated card"><span class="dot"></span><span class="lbl">Laminated card</span></button>
+        <span class="exit-btn" aria-hidden="true"></span>
+        <button class="hs kp" data-hs="keypad" aria-label="Door keypad"><span class="face"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="dot"></span><span class="lbl">Door keypad</span></button>
+        <button class="hs lect" data-hs="monitor" aria-label="Lectern monitor"><span class="mon"></span><span class="stand"></span><span class="desk"></span><span class="nt"></span><span class="nt"></span><span class="nt"></span><span class="nt"></span><span class="dot"></span><span class="lbl">Lectern monitor</span></button>
+        <div class="chairs" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span></div>
+      </div>
+    </div>
+    <p class="caption">Tap anything that looks useful.</p>
+  </section>
+
+  <section class="screen" id="s-end" hidden>
+    <div class="end-card" id="end-card"></div>
+    <button class="btn" id="b-debrief">What just happened?</button>
+  </section>
+
+  <section class="screen" id="s-debrief" hidden>
+    <div class="stats" id="stats"></div>
+    <h2 class="thesis">The lock worked perfectly. <em>The password system did not.</em></h2>
+    <div class="cards" id="cards"></div>
+    <section class="refs">
+      <h3>Sources</h3>
+      <ul>
+        <li><a href="https://www.ljmu.ac.uk/ithelp/user-accounts-and-security/keeping-your-account-secure" target="_blank" rel="noopener">LJMU IT Help: Keeping your account secure</a></li>
+        <li><a href="https://www.ljmu.ac.uk/ithelp/user-accounts-and-security/changing-your-password" target="_blank" rel="noopener">LJMU IT Help: Changing your password</a></li>
+        <li><a href="https://www.ncsc.gov.uk/blog-post/problems-forcing-regular-password-expiry" target="_blank" rel="noopener">NCSC: The problems with forcing regular password expiry</a></li>
+              </ul>
+      <p>The SmartLock and the Smart Campus pilot are fictional.</p>
+    </section>
+    <div class="d-actions"><button class="btn" id="b-again">Play again</button></div>
+  </section>
+
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title" hidden>
+  <div class="sheet-head"><h2 id="sheet-title"></h2><button class="close" id="sheet-close" aria-label="Close">×</button></div>
+  <div class="sheet-body" id="sheet-body"></div>
+</div>
+<div class="opening" id="opening" hidden><div class="pane"><div class="leaf"></div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+const GROUPS=['ABC','DEF','GHI','JKL','MNO','PQR','STU','VWX','YZ'];
+const DIGIT={};GROUPS.forEach((g,i)=>{for(const c of g)DIGIT[c]=i+1});
+// Old passwords: exactly one letter whose digit changes after the one-step shift.
+const OLD_WORDS=['ADVERT','APPEAL','BANKING','BRAND','BUDGET','DEBIT','KEYNOTE','MANAGER','MARKET','MEETING','MERGE','PAYABLE','SALES','SHARES','SKETCH','TARGET','TAXES','TENDER','TRADE','WEBSITE'];
+// This week's password: at least two such letters.
+const NEW_WORDS=['AUDIT','BALANCE','BENCHMARK','BIDDING','BRANDING','CHANNEL','DEADLINE','EMAIL','EQUITY','GROWTH','INSIGHT','LEDGER','MARGIN','MERGER','NETWORK','PITCH','QUOTA','REVENUE','STAFF','STARTUP','STOCK','SUPPLY','VALUE','VENDOR','WALLET','ANALYTICS','CAPITAL','CLIENT','DIGITAL','ENTERPRISE','EXPORT','FINANCE','IMPORT','METRICS','PRICE','RETAIL','INVOICE','PAYROLL'];
+const LIMIT=15*60; // seconds
+const MODES={easy:{shift:1,reverse:false,label:'Easy'},hard:{shift:2,reverse:true,label:'Hard'}};
+let MODE=MODES.easy;
+const SHIFT=(c,k)=>String.fromCharCode(65+(c.charCodeAt(0)-65+k)%26);
+const NEXT=c=>SHIFT(c,MODE.shift);
+const code=c=>DIGIT[NEXT(c)];
+const changed=c=>DIGIT[c]!==code(c);
+const fwd=w=>{const d=[...w].map(code);return (MODE.reverse?d.reverse():d).join('')};
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const $=id=>document.getElementById(id);
+
+let G=null,timer=null,sound=false,ac=null;
+
+function newGame(mode){
+  if(mode)MODE=MODES[mode];
+  ['mode-room','mode-story'].forEach(id=>{const b=$(id);b.textContent=MODE.label;b.classList.toggle('hard',MODE.reverse)});
+  let secret,old;
+  if(MODE.reverse){
+    const all=[...new Set(OLD_WORDS.concat(NEW_WORDS))];
+    const pal=w=>fwd(w)===fwd(w).split('').reverse().join('');
+    do{secret=pick(all.filter(w=>[...w].filter(changed).length>=2))}while(pal(secret));
+    old=shuffle(all.filter(w=>w!==secret&&!pal(w))).slice(0,2);
+  }else{
+    secret=pick(NEW_WORDS);
+    old=shuffle(OLD_WORDS.filter(w=>w!==secret)).slice(0,2);
+  }
+  // chart: one stained row, a few scratched letters elsewhere
+  const hidden=new Set();
+  const stainRows=[pick([5,6,7,8])];
+  GROUPS.forEach((g,i)=>{
+    const d=i+1;
+    if(stainRows.includes(d)){for(const c of g)hidden.add(c);return}
+    if(d===1)return;
+    const letters=[...g],keep=pick(letters);
+    letters.forEach(c=>{if(c!==keep&&Math.random()<.35)hidden.add(c)});
+  });
+  // solvability: every letter of this week's password is on the card or in an old note
+  const inOld=new Set((old[0]+old[1]).split(''));
+  // the shifted letter of each new letter must be readable on the card
+  for(const c of secret){if(MODE.reverse||!inOld.has(c))hidden.delete(NEXT(c))}
+  if(MODE.reverse){
+    // hard: the whole first note can be checked against the card
+    for(const c of old[0]){hidden.delete(c);hidden.delete(NEXT(c))}
+  }else{
+    // easy: each old note's odd letter, and its shifted letter, are on the card so the mismatch can be spotted
+    for(const w of old)for(const c of w)if(changed(c)){hidden.delete(c);hidden.delete(NEXT(c))}
+  }
+  for(const r of stainRows)if(![...GROUPS[r-1]].some(c=>hidden.has(c)))stainRows.length=0;
+  let blurRows=[];
+  if(MODE.reverse){
+    // hard: faulty printer, only rows 1, 5 and 9 came out
+    hidden.clear();stainRows.length=0;blurRows=[2,3,4,6,7,8];
+    blurRows.forEach(d=>{for(const c of GROUPS[d-1])hidden.add(c)});
+  }
+  G={secret,old,hidden,stainRows,blurRows,attempts:0,hints:0,notes:{},cardCopied:false,monitorCopied:false,seen:new Set(),start:0,elapsed:0,ended:false,entry:''};
+}
+
+// ---------- screens
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.hidden=s.id!==id);$(id).scrollTop=0}
+
+// ---------- clock
+function countdown(sec){const r=Math.max(0,LIMIT-sec);return String(Math.floor(r/60)).padStart(2,'0')+':'+String(r%60).padStart(2,'0')}
+function clockText(sec){const m=15+Math.floor(sec/60);return '13:'+String(m).padStart(2,'0')}
+function startClock(){
+  G.start=Date.now();
+  clearInterval(timer);
+  timer=setInterval(tick,500);tick();
+}
+function tick(){
+  if(G.ended)return;
+  G.elapsed=Math.min(LIMIT,Math.floor((Date.now()-G.start)/1000)+(G.penalty||0));
+  $('clock-t').textContent=countdown(G.elapsed);
+  $('clock-bar').style.width=(100*(1-G.elapsed/LIMIT))+'%';
+  $('clock').classList.toggle('late',LIMIT-G.elapsed<=180);
+  if(G.elapsed>=LIMIT)finish(false);
+}
+
+// ---------- sound
+function beep(f,d,type='square',vol=.06,delay=0){
+  if(!sound)return;
+  try{
+    ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    const o=ac.createOscillator(),g=ac.createGain();
+    o.type=type;o.frequency.value=f;g.gain.value=vol;
+    o.connect(g);g.connect(ac.destination);
+    const t=ac.currentTime+delay;o.start(t);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.stop(t+d+.02);
+  }catch(e){}
+}
+function setSound(on){
+  sound=on;
+  $('b-sound-title').textContent='Sound: '+(on?'on':'off');
+  $('b-sound-title').setAttribute('aria-pressed',on);
+  $('b-sound').textContent=on?'♪':'♪̸';
+  $('b-sound').setAttribute('aria-label',on?'Sound on':'Sound off');
+  $('b-sound').setAttribute('aria-pressed',on);
+  if(on)beep(880,.08);
+}
+
+// ---------- sheet
+let onSheetClose=null;
+function openSheet(title,html,after){
+  $('sheet-title').textContent=title;
+  $('sheet-body').innerHTML=html;
+  $('scrim').hidden=false;$('sheet').hidden=false;
+  requestAnimationFrame(()=>{$('scrim').classList.add('on');$('sheet').classList.add('on')});
+  $('sheet-body').scrollTop=0;
+  if(after)after($('sheet-body'));
+  setTimeout(()=>$('sheet-close').focus(),50);
+}
+function closeSheet(){
+  $('scrim').classList.remove('on');$('sheet').classList.remove('on');
+  setTimeout(()=>{$('scrim').hidden=true;$('sheet').hidden=true},280);
+  if(onSheetClose){const f=onSheetClose;onSheetClose=null;f()}
+}
+function toast(t){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1600)}
+function markSeen(k){G.seen.add(k);document.querySelectorAll('[data-hs="'+k+'"]').forEach(b=>b.classList.add('seen'))}
+
+// ---------- chart html
+function chartHTML(){
+  let h='<div class="chart">';
+  GROUPS.forEach((g,i)=>{
+    const d=i+1,st=G.stainRows.includes(d);
+    if(G.blurRows.includes(d)){h+='<div class="row blur" aria-hidden="true"><b>'+(d+3)%10+'</b>';for(const c of g)h+='<span>'+'MWQ'[Math.floor(Math.random()*3)]+'</span>';h+='</div>';return}
+    h+='<div class="row'+(st?' stain':'')+'"><b>'+d+'</b>';
+    for(const c of g)h+=G.hidden.has(c)?'<span class="q">?</span>':'<span>'+c+'</span>';
+    h+='</div>';
+  });
+  return h+'</div>';
+}
+
+// ---------- hotspots
+const HS={
+  card(){
+    openSheet('Laminated card',
+      '<div class="lam"><span class="scratch"></span><h3>LJMU Smart Campus Access: Quick Guide</h3><p>Your access code is this room\'s weekly password, converted to digits using the chart below. Passwords change every Monday and are emailed to teaching staff only.</p>'+chartHTML()+'<p class="lam-foot">Estate Management · Education Building</p></div>'+
+      '<p class="flav">'+(MODE.reverse?'The printer was clearly dying when it printed this. Most of the chart is a grey smudge.':'Someone has been picking at the laminate. Part of the chart has gone.')+'</p>');
+    if(!G.cardCopied){G.cardCopied=true;toast('Chart added to your notes')}
+  },
+  monitor(){
+    const [a,b]=G.old;
+    openSheet('Lectern monitor',
+      '<p>The room\'s teaching computer is locked. Its monitor is framed with yellow sticky notes, all in the same handwriting:</p>'+
+      '<div class="monitor-board">'+
+        '<div class="sn"><small>102 wk4: <span class="tick">✓</span></small>'+pairHTML(a)+'</div>'+
+        '<div class="sn"><small>102 wk5: <span class="tick">✓</span></small>'+pairHTML(b)+'</div>'+
+        '<div class="sn"><small>102 wk6:</small>'+G.secret+'<br><small>(do the numbers!!)</small></div>'+
+        '<div class="sn"><small>Printer PIN</small>0000<br><small>(change this)</small></div>'+
+      '</div>');
+    if(!G.monitorCopied){G.monitorCopied=true;toast('Sticky notes added to your notes')}
+  },
+  whiteboard(){
+    openSheet('Whiteboard',
+      '<div class="wb-big"><div class="ghost">wk5 · Infrastructure and swimlanes</div><div class="ghost">customer | front desk | IT | …</div><div class="ghost">LBS · Digital Business Mgmt</div><div class="main">Next week: Security and wireframes.</div></div>'+
+      '<p class="flav">Last week\'s notes are half wiped. At the bottom, underlined twice, a note about this week.</p>');
+  },
+  window(){
+    openSheet('Window','<p style="font-size:18px">The heavy rain is still not over. Even if the window opened, you would not want to go out that way.</p>');
+  },
+  keypad(){openKeypad()}
+};
+function pairHTML(w){
+  if(MODE.reverse)return '<span class="plain">'+w+'<br>'+fwd(w)+'</span>';
+  let h='<span class="pair">';for(const c of w)h+='<span><b>'+c+'</b><i>'+code(c)+'</i></span>';return h+'</span>'}
+
+// ---------- notes
+function notesHTML(compact){
+  let h='';
+  if(G.monitorCopied){
+    h+='<div class="ref'+(compact?' compact':'')+'">'+
+      '<div class="refline"><small>wk4 ✓</small>'+pairHTML(G.old[0])+'</div>'+
+      '<div class="refline"><small>wk5 ✓</small>'+pairHTML(G.old[1])+'</div>'+
+      '<div class="refline now"><small>wk6 (this week)</small><span class="word-now">'+G.secret+'</span></div></div>';
+  }
+  if(G.cardCopied)h+='<div class="lam'+(compact?' compact':'')+'">'+chartHTML()+'</div>';
+  return h;
+}
+function openNotes(){
+  let h='';
+  if(!G.monitorCopied)h+='<div class="empty">Look at the lectern monitor to add the passwords here.</div>';
+  if(!G.cardCopied)h+='<div class="empty">Look at the laminated card by the door to add the letter chart here.</div>';
+  openSheet('Your notes',notesHTML(false)+h);
+}
+
+// ---------- keypad
+const WRONG=["Beep. The keypad remains unimpressed.","Red light. Someone at the back suggests 1234.","Wrong. The door does not care how long you've waited."];
+function openKeypad(){
+  G.entry='';
+  const nh=notesHTML(true);
+  openSheet('Door keypad',
+    (nh?'<div class="kp-notes">'+nh+'</div>':'')+
+    '<div class="lock'+(nh?' tight':'')+'" id="lock"><div class="brand"><span>SmartLock 3000</span><span class="led" id="led"></span></div>'+
+    '<div class="lcd" id="lcd" aria-live="polite"></div>'+
+    '<div class="keys">'+[1,2,3,4,5,6,7,8,9].map(d=>'<button data-k="'+d+'">'+d+'</button>').join('')+
+    '<button class="fn" data-k="C">Clear</button><span></span><button class="fn enter" data-k="E">Enter</button></div>'+
+    '<div class="sticker">Installed by Estate Management. Do not lean.</div></div>'+
+    '<div class="kp-msg" id="kp-msg" aria-live="polite"></div>',
+    b=>{b.querySelectorAll('[data-k]').forEach(k=>k.addEventListener('click',()=>key(k.dataset.k)))});
+  document.addEventListener('keydown',kbd);
+  onSheetClose=()=>document.removeEventListener('keydown',kbd);
+}
+function kbd(e){
+  if(/^[1-9]$/.test(e.key))key(e.key);
+  else if(e.key==='Enter')key('E');
+  else if(e.key==='Backspace'||e.key==='Escape'&&false)key('C');
+}
+function key(k){
+  if(G.ended)return;
+  const lcd=$('lcd'),msg=$('kp-msg'),led=$('led');if(!lcd)return;
+  const btn=document.querySelector('[data-k="'+k+'"]');if(btn){btn.classList.add('press');setTimeout(()=>btn.classList.remove('press'),110)}
+  if(k==='C'){G.entry='';lcd.textContent='';beep(440,.05);return}
+  if(k==='E'){
+    if(!G.entry)return;
+    G.attempts++;
+    if(G.entry===fwd(G.secret)){
+      led.className='led green';lcd.classList.add('ok');lcd.textContent='OPEN';msg.className='kp-msg';msg.textContent='';
+      beep(880,.1,'sine',.08);beep(1320,.18,'sine',.08,.12);
+      setTimeout(()=>{closeSheet();finish(true)},700);
+      return;
+    }
+    led.className='led red';
+    const lock=$('lock');lock.classList.remove('shake');void lock.offsetWidth;lock.classList.add('shake');
+    beep(180,.35,'sawtooth',.07);
+    msg.className='kp-msg bad';msg.textContent=WRONG[(G.attempts-1)%WRONG.length];
+    G.entry='';setTimeout(()=>{if($('lcd'))$('lcd').textContent='';if($('led'))$('led').className='led'},900);
+    return;
+  }
+  if(G.entry.length>=9)return;
+  G.entry+=k;lcd.textContent=G.entry;beep(1046,.04);
+}
+
+// ---------- hints
+function hintTexts(){return [
+  'Look up each letter of an old password on the card and write down the digits you get. Then compare them with the code on the sticky note. Where do they differ?',
+  'Whoever set up the lock used the same fixed rule for every password. Work it out on one old note, check it on the other, then apply it to this week\'s password.'
+]}
+function openHints(){
+  const render=b=>{
+    const t=hintTexts();let h='';
+    for(let i=0;i<G.hints;i++)h+='<div class="hint"><b>Hint '+(i+1)+'</b>'+t[i]+'</div>';
+    if(G.hints<2)h+='<button class="btn small" id="b-usehint">Show hint '+(G.hints+1)+' (costs 3 minutes)</button>';
+    else h+='<p class="flav">No hints left. You have everything you need.</p>';
+    if(!G.hints)h='<p class="flav">Each hint costs 3 minutes from your countdown.</p>'+h;
+    b.innerHTML=h;
+    const u=b.querySelector('#b-usehint');u&&u.addEventListener('click',()=>{G.hints++;G.penalty=(G.penalty||0)+180;tick();toast('−3 minutes');if(G.ended)return;$('hint-n').textContent=2-G.hints;render(b)});
+  };
+  openSheet('Hints','',render);
+}
+
+// ---------- endings
+function owl(){const k='2.11-wk6',d=atob('ZkZUEUIAB0UST0NUDRkEQhJZWVBZVx9eV1cRQkgSBg==');let o='';for(let i=0;i<d.length;i++)o+=String.fromCharCode(d.charCodeAt(i)^k.charCodeAt(i%k.length));return o}
+function finish(ok){
+  if(G.ended)return;G.ended=true;clearInterval(timer);
+  G.ok=ok;G.endTime=ok?clockText(G.elapsed):'13:30';G.left=countdown(G.elapsed);
+  if(!$('sheet').hidden)closeSheet();
+  const card=$('end-card');
+  if(ok){
+    card.className='end-card ok';
+    card.innerHTML='<div class="big">'+G.endTime+'. The light turns green.</div><p>In the corridor you nearly collide with Dr Biały, carrying a coffee from the café by the library. <span class="quote">"Sorry, sorry. I thought the room had been changed again, so I went to the wrong building. I\'ve been standing outside an empty seminar room on the other side of campus."</span></p>'+(MODE.reverse?'<p>He looks at the keypad, then at you. <span class="quote">"You cracked the hard one? Well done."</span> He lowers his voice. <span class="quote">"Here\'s a password of my own. Say it to me any time and I\'ll buy you a coffee."</span></p><p class="secret">'+owl()+'</p>':'')+'<p>You think about telling him that every password for this room is stuck to the teaching monitor.</p>';
+    const op=$('opening');op.hidden=false;
+    requestAnimationFrame(()=>op.classList.add('on'));
+    setTimeout(()=>{show('s-end');op.classList.remove('on');setTimeout(()=>op.hidden=true,400)},window.matchMedia('(prefers-reduced-motion: reduce)').matches?50:1900);
+  }else{
+    card.className='end-card late';
+    card.innerHTML='<div class="big">13:30. The door beeps and opens.</div><p>Dr Biały walks in with a coffee from the café by the library, dripping with rain and apologising: he was sure the room had been changed again and went to the wrong building. He glances at the teaching monitor and types the code.</p><p class="quote">"Right, sorry I\'m late. Today\'s topic: security and wireframes."</p><p>You look at the sticky notes. They look at the sticky notes.</p>';
+    beep(520,.15,'sine',.06);beep(520,.15,'sine',.06,.2);
+    show('s-end');
+  }
+}
+function debrief(){
+  const n=G.secret.length,space=Math.pow(9,n).toLocaleString('en-GB');
+  $('stats').innerHTML='<span>'+MODE.label+'</span><span>'+(G.ok?'Escaped with '+G.left+' left':'Time ran out')+'</span><span>'+G.attempts+' attempt'+(G.attempts===1?'':'s')+'</span><span>'+G.hints+' hint'+(G.hints===1?'':'s')+'</span>';
+  const C=[
+    ['Encoding is not encryption.',G.secret+' became '+fwd(G.secret)+' by a public rule printed on the wall. Anyone who knows the rule can reverse it, so it hides nothing.'],
+    ['Obscurity is not security.',(MODE.reverse?'Shifting each letter two steps forward and reversing the digits':'Shifting each letter one step forward')+' only slowed you down until you compared a worked example with the card. A system should stay secure even when its method is known.'],
+    ['Small keyspace, many collisions.',n+' digits from 1–9 give '+space+' codes, but many words share one code: CAB, BAC and ABC all become 111. Choosing passwords from one theme, like business words, shrinks the space further. LJMU\'s own advice is at least 10 characters, or three random words as the NCSC recommends.','LJMU IT Help; NCSC'],
+    ['Old passwords leak the rule.','Two expired passwords plus their codes were enough to rebuild the whole system. Retired credentials still carry information, which is why LJMU does not let you reuse a password you have used there before.','LJMU IT Help'],
+    ['The weakest link is a person, and the policy that made them write it down.','LJMU IT Help tells you not to write your password down and never to share it. Yet LJMU passwords still expire automatically after a set time. The NCSC argues that forcing regular changes pushes people towards weaker passwords and written notes, like the ones on this monitor.','LJMU IT Help; NCSC'],
+    ['Security vs safety.','A disabled exit button and a keypad on the inside traded people\'s freedom of movement for a feeling of control.']
+  ];
+  $('cards').innerHTML=C.map((c,i)=>'<article class="dcard"><span class="no">'+(i+1)+'</span><h3>'+c[0]+'</h3><p>'+c[1]+(c[2]?' <span class="src">Source: '+c[2]+'</span>':'')+'</p></article>').join('');
+  show('s-debrief');
+}
+
+// ---------- wiring
+function resetRoom(){
+  document.querySelectorAll('.hs').forEach(b=>b.classList.remove('seen'));
+  $('hint-n').textContent='2';$('clock-t').textContent='15:00';$('clock-bar').style.width='100%';$('clock').classList.remove('late');
+}
+$('b-easy').addEventListener('click',()=>{beep(660,.05);newGame('easy');show('s-story')});
+$('b-hard').addEventListener('click',()=>{beep(660,.05);newGame('hard');show('s-story')});
+$('b-look').addEventListener('click',()=>{resetRoom();show('s-room');startClock()});
+$('b-notes').addEventListener('click',openNotes);
+$('b-hint').addEventListener('click',openHints);
+$('b-sound').addEventListener('click',()=>setSound(!sound));
+$('b-sound-title').addEventListener('click',()=>setSound(!sound));
+$('sheet-close').addEventListener('click',closeSheet);
+$('scrim').addEventListener('click',closeSheet);
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('sheet').hidden)closeSheet()});
+document.querySelectorAll('[data-hs]').forEach(b=>b.addEventListener('click',()=>{const k=b.dataset.hs;markSeen(k);beep(740,.03,'triangle',.04);HS[k]()}));
+$('b-debrief').addEventListener('click',debrief);
+$('b-restart').addEventListener('click',()=>{
+  openSheet('Restart?','<p>Go back to the start and choose Easy or Hard. This attempt and its countdown will be lost.</p><div class="restart-actions"><button class="btn" id="b-restart-yes">Restart</button><button class="btn ghost-dark" id="b-restart-no">Keep playing</button></div>',
+    b=>{b.querySelector('#b-restart-yes').addEventListener('click',()=>{G.ended=true;clearInterval(timer);closeSheet();show('s-title')});
+       b.querySelector('#b-restart-no').addEventListener('click',closeSheet)});
+});
+$('b-again').addEventListener('click',()=>show('s-title'));
+
+newGame();
+})();
+</script>
+
+</body>
+</html>
