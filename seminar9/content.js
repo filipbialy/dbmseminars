@@ -4,12 +4,12 @@
 window.CONTENT = (function () {
   const DECISIONS = {
     1: { t: 'Fit or redesign?', d: 'Should Northway buy a standard system (ERP package) and change itself to fit it, or build around the system the board has just designed?' },
-    2: { t: 'Junior employees', d: 'Looking at Team D’s screen: what will the 30 graduates actually do, and how will they build expertise?' }
+    2: { t: 'Junior employees', d: 'Looking at Team D’s wireframe screen: what will the 30 graduates actually do, and how will they build expertise?' }
   };
   const NAV = { A: 'Stock', B: 'Delivery', C: 'Customers', D: 'People', E: 'Dashboard' };
   const STATUS = ['Ordered', 'In warehouse', 'Out for delivery', 'Failed', 'At pick-up point', 'Collected'];
 
-  // f(text, kind, component type(s) accepted, "On your screen" line)
+  // f(text, kind, component type(s) accepted, "On your wireframe screen" line)
   // kind: key | case (true case fact) | false (contradicts reading) | mis (misleading) | dis (irrelevant)
   const f = (text, kind, comp, screen) => ({ text, kind, comp: Array.isArray(comp) ? comp : [comp], screen });
   // q(pool, where, question, accepted answers, hint). An answer is accepted if it CONTAINS one of the accepted strings
@@ -109,8 +109,8 @@ window.CONTENT = (function () {
         q('team', 'Paragraph 8', 'In which year did Cainiao launch its tracking app?', ['=2016', 'in2016'], 'A year in the middle of paragraph 8.'),
         q('team', 'Paragraph 8', 'What is the name of that tracking app?', ['guoguo'], '“Cainiao ______”.'),
         q('team', 'Paragraph 8', 'The Cainiao website tracks orders by working with partners abroad and with national … what?', ['postoffice', 'post'], 'Organisations that deliver letters.'),
-        q('team', 'Slide “Business Value of CRM Systems”', 'What is the term for the number of customers who stop using or buying a company’s products?', ['churn'], 'Two words; the first starts with “ch”.'),
-        q('team', 'Slide “Figure 9.6 CRM”', 'The CRM diagram divides its applications into sales, marketing and which third area?', ['service'], 'What a call centre provides.'),
+        q('team', 'Slide “Business Value of Customer Relationship Management Systems”', 'What is the term for the number of customers who stop using or buying a company’s products?', ['churn'], 'Two words; the first starts with “ch”.'),
+        q('team', 'Slide “Figure 9.6 Customer Relationship Management (CRM)”', 'The CRM diagram divides its applications into sales, marketing and which third area?', ['service'], 'What a call centre provides.'),
         q('team', 'Slide “Customer Relationship Management”', 'CRM systems provide a single enterprise view of the … what?', ['customer'], 'Who CRM is all about.')
       ],
       facts: [
