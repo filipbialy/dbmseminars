@@ -6,7 +6,7 @@ window.CONTENT = (function () {
     1: { t: 'Fit or redesign?', d: 'Should Northway buy a standard system (ERP package) and change itself to fit it, or build around the system the board has just designed?' },
     2: { t: 'Junior employees', d: 'Looking at Team D’s wireframe screen: what will the 30 graduates actually do, and how will they build expertise?' }
   };
-  const NAV = { A: 'Stock', B: 'Delivery', C: 'Customers', D: 'People', E: 'Systems', F: 'Dashboard' };
+  const NAV = { A: 'Stock', B: 'Delivery', C: 'Customers', D: 'People', E: 'Dashboard' };
   const STATUS = ['Ordered', 'In warehouse', 'Out for delivery', 'Failed', 'At pick-up point', 'Collected'];
 
   // f(text, kind, component type(s) accepted, "On your wireframe screen" line)
@@ -170,64 +170,41 @@ window.CONTENT = (function () {
       ]
     },
     E: {
-      name: 'Technology', short: 'Technology', vc: 'Support activity',
-      role: 'You are Northway’s IT department. You decide which systems Northway buys or builds, and how they connect into one database.',
-      screenTitle: 'Systems', screen: 'The IT team’s “systems & integration” screen: how Northway’s systems connect, and the ERP decision.',
-      test: 'Does it help the IT team see how Northway’s systems fit together, and decide what to buy or build?',
-      order: '#NW-1042 shown as one shared record that every department’s system reads.',
-      read: 'Paragraphs 1–3 of the Alibaba case (everyone) and the TIME excerpt (your part)',
-      exam: ['Technology development (support activity)', 'ERP: one company, one database', 'Built-in “best practice” processes', 'Switching costs and vendor lock-in'],
-      system: 'Technology development (computer-aided design systems); enterprise application integration',
+      name: 'Administration, Management & Technology', short: 'Management & technology', vc: 'Support activity · chairs the board',
+      role: 'You are the CEO’s office and the IT department. You choose the company’s systems — and you organise and chair the board meeting.',
+      screenTitle: 'Dashboard', screen: 'The board dashboard: “one company, one database”.',
+      test: 'Does it help the board see the whole company in one place and decide?',
+      order: '#NW-1042 counted in today’s failed deliveries and customers at risk.',
+      read: 'Paragraphs 1–3 of the Alibaba case (everyone), the IBD article and the marked TIME excerpt (your part)',
+      exam: ['Firm infrastructure and technology (support activities)', 'ERP: one company, one database', 'Built-in “best practice” processes', 'Switching costs and vendor lock-in'],
+      system: 'Administration & management systems; technology development',
       qs: [
         q('core', 'Paragraph 1', 'What revenue did Alibaba’s core commerce businesses make in the twelve months to December 2018? (billion dollars)', ['53.13', '5313'], 'A dollar figure with two decimals.'),
         q('core', 'Paragraph 2', 'China’s online retail sales were expected to reach how many trillion dollars in 2020?', ['=6', '6trillion', 'six'], 'The second number in paragraph 2.'),
         q('core', 'Paragraph 3', 'How many major logistics players joined the Cainiao consortium?', ['=20', '20major', 'twenty'], 'Next to “8,000 smaller ones”.'),
-        q('team', 'TIME, paragraph 1', 'Which smartphone operating system does TIME compare Cainiao’s platform to?', ['android'], 'It is made by Google.'),
-        q('team', 'TIME, paragraph 3', 'With how many logistics partners does Cainiao’s open platform collaborate?', ['3000', '3k', 'threethousand'], 'A number in the thousands.'),
-        q('team', 'TIME, paragraph 4', 'Cainiao’s goal: a 1 kg package anywhere in the world within 72 hours for how many dollars?', ['=3', '3dollar', 'three'], 'A very small number.'),
-        q('team', 'TIME, paragraph 6', 'Which Alibaba company processes the payments?', ['ant'], '“… Financial”.'),
-        q('team', 'TIME, paragraph 8', 'How many parcels does Cainiao now process for customs clearance in a single day?', ['20million', '=20', '20m', 'twentymillion'], 'A number of millions.'),
-        q('team', 'TIME, paragraph 3', 'How many couriers work within Cainiao’s system?', ['3million', '3m', 'threemillion', '=3000000'], 'A number of millions.')
+        q('team', 'IBD, paragraph 2', 'Up to how much did Alibaba offer to buy Cainiao shares from minority shareholders? (billion dollars)', ['3.75', '375'], 'A dollar figure in billions.'),
+        q('team', 'IBD, paragraph 2', 'On which stock exchange was Cainiao going to be listed?', ['hongkong', 'hk'], 'It is named after a city.'),
+        q('team', 'IBD, paragraph 3', 'Who is Alibaba’s chairman, quoted in the article?', ['tsai'], 'Joseph …'),
+        q('team', 'IBD, paragraph 5', 'Into how many separate entities did Alibaba plan to split in 2023?', ['=6', 'six', '6entit'], 'A small number.'),
+        q('team', 'IBD, paragraph 7', 'Which grocery unit’s spin-off did Alibaba also delay?', ['freshippo'], 'Its name contains “hippo”.'),
+        q('team', 'TIME excerpt', 'Which smartphone operating system does TIME compare Cainiao’s platform to?', ['android'], 'It is made by Google.')
       ],
       facts: [
         f('The ERP vendor says its standard package would require us to change about 40% of our current processes to fit its built-in “best practice” workflows.', 'key', ['card'], 'Card — “ERP fit: 40% of our processes would have to change”'),
-        f('The ERP contract would lock us in for seven years. Switching to another system later would cost about twice as much as installing it.', 'key', ['progress', 'card'], 'Progress indicator — “Lock-in: 7 years; switching later costs 2× the installation”'),
-        f('Today the warehouse spreadsheet, the website’s customer database and the old accounting package each keep their own copy of order data — and they often disagree.', 'key', ['card', 'list'], 'Card — one shared record of an order that every department’s system reads'),
-        f('In the TIME article, Cainiao is an open platform that thousands of logistics firms plug into, sharing the same standards — like apps on Android.', 'case', ['list', 'chips'], 'List — the systems connected to Northway’s platform: couriers, suppliers, payments'),
-        f('In the TIME article, Cainiao refuses to work with other delivery companies and keeps all deliveries in-house.', 'false', ['card'], 'Card — “Block other couriers”'),
-        f('A software salesperson said “everyone in retail is moving to our ERP”.', 'mis', ['efab'], 'Extended FAB — “Buy the ERP now”'),
-        f('The office Wi-Fi was upgraded last month.', 'dis', ['switch'], 'Switch — Wi-Fi on/off'),
-        f('The IT team has six people.', 'dis', ['badge'], 'Badge — “6”'),
-        f('The company website was rebuilt in 2020.', 'dis', ['tooltip'], 'Tooltip — “Website rebuilt 2020”'),
-        f('Finance closes the monthly accounts on the fifth working day.', 'dis', ['snackbar'], 'Snackbar — “Accounts closed”'),
-        f('The office printers are leased.', 'dis', ['iconbutton'], 'Icon button — printer settings'),
-        f('The IT helpdesk is open 9am–5pm.', 'dis', ['chips'], 'Chips — “Open”, “Closed”'),
-        f('Staff laptops are replaced every four years.', 'dis', ['datepicker'], 'Date picker — next laptop replacement'),
-        f('The server room is kept at 20°C.', 'dis', ['slider'], 'Slider — server room temperature'),
-        f('The staff intranet got a new background colour.', 'dis', ['carousel'], 'Carousel — intranet colour options')
-      ]
-    },
-    F: {
-      demo: true, draw: [0, 2], pick: [2, 2],
-      name: 'Administration & Management', short: 'Management', vc: 'Support activity · your tutor’s demo team',
-      role: 'The CEO’s office. Your tutor uses this team at the start to show every step — and then chairs the board meeting as Management.',
-      screenTitle: 'Dashboard', screen: 'The board dashboard: “one company, one database”.',
-      test: 'Does it help the board see the whole company in one place and decide?',
-      order: '#NW-1042 counted in today’s failed deliveries and customers at risk.',
-      read: 'The IBD article (2024), paragraphs 1–3',
-      exam: ['Administration & management (support activity)', 'Enterprise systems: firm-wide information for decisions', 'What to keep in-house'],
-      system: 'Administration & management systems (scheduling, messaging, reporting)',
-      qs: [
-        q('team', 'IBD, paragraph 2', 'On which stock exchange was Cainiao going to be listed?', ['hongkong', 'hk'], 'It is named after a city.'),
-        q('team', 'IBD, paragraph 3', 'Who is Alibaba’s chairman, quoted in the article?', ['tsai'], 'Joseph …')
-      ],
-      facts: [
-        f('In 2024 Alibaba cancelled Cainiao’s stock-market listing and paid to keep it, calling logistics strategically important.', 'case', ['card'], 'Card — “Keep in-house: logistics stays ours”'),
+        f('In 2024 Alibaba cancelled Cainiao’s stock-market listing and offered up to $3.75 billion to keep it, calling logistics strategically important.', 'case', ['card', 'dialog'], 'Card — “Keep in-house or outsource?”: which systems Northway must own itself'),
         f('Customers often ask for room-styling advice, but nobody at Northway is trained to give it. A competitor charges £40 per online styling session.', 'key', ['card', 'badge'], 'Card — “Styling requests this week — no adviser yet”'),
+        f('The ERP contract would lock us in for seven years. Switching to another system later would cost about twice as much as installing it.', 'key', ['progress', 'card'], 'Progress indicator — “Lock-in: 7 years; switching later costs 2× the installation”'),
         f('In 2024 Alibaba sold Cainiao to a competitor to cut costs.', 'false', ['card'], 'Card — “Sell our delivery arm”'),
         f('The head-office lease ends in 2029.', 'dis', ['datepicker'], 'Date picker — lease end date'),
         f('The CEO visited a warehouse in Hangzhou in 2019.', 'dis', ['carousel'], 'Carousel — photos from the visit'),
-        f('The board meets on the first Monday of each month.', 'dis', ['tabs'], 'Tabs — one tab per board meeting')
+        f('The board meets on the first Monday of each month.', 'dis', ['tabs'], 'Tabs — one tab per board meeting'),
+        f('The company logo was redesigned in 2023.', 'dis', ['iconbutton'], 'Icon button — the new logo'),
+        f('A software salesperson said “everyone in retail is moving to our ERP”.', 'mis', ['efab'], 'Extended FAB — “Buy the ERP now”'),
+        f('The office Wi-Fi was upgraded last month.', 'dis', ['switch'], 'Switch — Wi-Fi on/off'),
+        f('The IT team has six people.', 'dis', ['badge'], 'Badge — “6”'),
+        f('Finance closes the monthly accounts on the fifth working day.', 'dis', ['snackbar'], 'Snackbar — “Accounts closed”'),
+        f('The company website was rebuilt in 2020.', 'dis', ['tooltip'], 'Tooltip — “Website rebuilt 2020”'),
+        f('The board has five members.', 'dis', ['chips'], 'Chips — board members’ names')
       ]
     }
   };
