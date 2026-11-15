@@ -2,8 +2,13 @@
    Data: Firebase Firestore (when config.js has a firebase config) or this browser only (test mode). */
 const { TEAMS, NAV, STATUS, DECISIONS } = window.CONTENT;
 const CFG = window.SEMINAR_CONFIG || {};
-const TK = ['A', 'B', 'C', 'D', 'E'];
-const PHASES = [[0, 5, 'Introduction'], [5, 18, 'Read your text'], [18, 23, 'Check questions'], [23, 38, 'Choose your facts'], [38, 58, 'Build your wireframe screen'], [58, 60, 'Submit']];
+const TK = ['A', 'B', 'C', 'D', 'E', 'F'];
+const STUDENTS = ['A', 'B', 'C', 'D', 'E'];
+const drawOf = k => TEAMS[k].draw || [1, 3];
+const pickOf = k => TEAMS[k].pick || [3, 4];
+const nq = k => drawOf(k)[0] + drawOf(k)[1];
+const pickTxt = k => { const [a, b] = pickOf(k); return a === b ? String(a) : `${a}–${b}`; };
+const PHASES = [[0, 13, 'Read your text'], [13, 18, 'Check questions'], [18, 33, 'Choose your facts'], [33, 58, 'Build your wireframe screen'], [58, 60, 'Submit']];
 const app = document.getElementById('app');
 
 /* ---------------- components (Material 3 names) ---------------- */
@@ -26,8 +31,9 @@ TK.forEach((k, ti) => {
   const r = rng(1042 + ti * 97); const ids = TEAMS[k].facts.map(f => f.id);
   const good = ids.filter(id => ['key', 'case'].includes(FACT[id].kind)), rest = ids.filter(id => !good.includes(id));
   const sh = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  let slots; do { slots = sh([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]).slice(0, good.length).sort((x, y) => x - y); }
-  while (slots.some((v, i) => i && v - slots[i - 1] < 2) || slots[slots.length - 1] - slots[0] < 8);
+  const L = ids.length, cand = Array.from({ length: L - 1 }, (_, i) => i + 1), span = Math.min(8, L - 3);
+  let slots; do { slots = sh(cand).slice(0, good.length).sort((x, y) => x - y); }
+  while (slots.some((v, i) => i && v - slots[i - 1] < 2) || slots[slots.length - 1] - slots[0] < span);
   const g = sh(good), o = sh(rest); const seq = [];
   for (let i = 0; i < ids.length; i++) seq.push(slots.includes(i) ? g.shift() : o.shift());
   TEAMS[k].seq = seq;
@@ -116,7 +122,7 @@ function buildItems(k) {
   const txt = wf.map(e => (e.text || '')).join(' ').toLowerCase();
   const rules = [
     { ok: wf.some(e => e.type === 'topappbar' && /northway/i.test(e.text || '')), label: 'Top app bar named “Northway · …”' },
-    { ok: wf.some(e => e.type === 'navbar'), label: 'Navigation bar: Stock · Delivery · Customers · People · Dashboard' },
+    { ok: wf.some(e => e.type === 'navbar'), label: 'Navigation bar: ' + TK.map(x => NAV[x]).join(' · ') },
     { ok: /nw-?1042/.test(txt), label: 'Order #NW-1042 shown on your wireframe screen' }
   ];
   return { items, rules };
@@ -124,7 +130,7 @@ function buildItems(k) {
 function submitChecks(k) {
   const t = T(k), n = t.picked.length, { items, rules } = buildItems(k);
   return [
-    [n >= 3 && n <= 4, `3–4 facts chosen (${n})`],
+    [n >= pickOf(k)[0] && n <= pickOf(k)[1], `${pickTxt(k)} facts chosen (${n})`],
     [n > 0 && t.picked.every(id => (t.because[id] || '').trim().length >= 10), 'Every fact has a “This matters because…” sentence'],
     [n > 0 && items.every(i => i.ok), 'Every chosen fact is on your wireframe screen as its component'],
     [rules.every(r => r.ok), 'Northway system rules followed']
@@ -133,13 +139,13 @@ function submitChecks(k) {
 function missingOf(k) {
   const t = T(k); if (t.lockedAt) return '';
   if (!unlocked(k)) return 'check questions';
-  if (t.picked.length < 3) return 'facts';
+  if (t.picked.length < pickOf(k)[0]) return 'facts';
   const c = submitChecks(k); if (!c[2][0] || !c[3][0]) return 'wireframe screen';
   return 'not submitted';
 }
 function parts() {
   const p = TK.map(k => ({ k, label: 'Team ' + k, part: TEAMS[k].short, ok: !!T(k).lockedAt, miss: missingOf(k) }));
-  const ag = T('E').agenda; p.push({ k: 'agenda', label: 'Agenda', part: 'the agenda (Team E)', ok: !!ag.publishedAt, miss: 'not published' });
+  const ag = T('F').agenda; p.push({ k: 'agenda', label: 'Agenda', part: 'the agenda', ok: !!ag.publishedAt, miss: 'not published' });
   return p;
 }
 const allReady = () => parts().every(p => p.ok);
@@ -154,7 +160,7 @@ function boardState() {
 function teamStatus(k) {
   const t = T(k);
   if (t.lockedAt) return ['Submitted ✓', 'ok'];
-  if (!unlocked(k)) { const n = (t.qset || []).filter(i => t.solved[i]).length; return [t.qset ? `Check questions ${n}/4` : 'Reading', '']; }
+  if (!unlocked(k)) { const n = (t.qset || []).filter(i => t.solved[i]).length; return [t.qset ? `Check questions ${n}/${nq(k)}` : 'Reading', '']; }
   if ((t.wf || []).length > 2) return ['Building wireframe screen', 'warn'];
   return [`Choosing facts (${t.picked.length})`, 'warn'];
 }
@@ -163,7 +169,7 @@ function teamStatus(k) {
 function vcHTML({ size = '', hi = [], fill = null, bad = [] } = {}) {
   const box = k => `<div class="vc-box ${hi.includes(k) ? 'hi' : ''} ${bad.includes(k) ? 'bad' : ''}" style="color:${col(k)}"><div class="nm">${k} · ${esc(TEAMS[k].short)}</div>${fill ? `<div class="fill">${fill(k)}</div>` : ''}</div>`;
   return `<div class="vc ${size}"><div class="vc-side">Support activities</div><div class="vc-arrow">
-    <div class="vc-support">${box('E')}${box('D')}</div><div class="vc-side" style="margin:0">Primary activities</div>
+    <div class="vc-support">${box('F')}${box('D')}${box('E')}</div><div class="vc-side" style="margin:0">Primary activities</div>
     <div class="vc-primary">${box('A')}<div class="vc-box na"><div class="nm">Operations</div>${size ? '' : '<div class="fill">not used — Northway does not manufacture</div>'}</div>${box('C')}${box('B')}</div></div>
     <div class="vc-industry"><span>Suppliers’ suppliers</span><span>Suppliers</span><span class="firm">Northway Home</span><span>Distributors</span><span>Customers</span></div></div>`;
 }
@@ -230,7 +236,7 @@ function countHTML(big = false) {
 }
 function readyBar(big = false) {
   const p = parts(); const n = p.filter(x => x.ok).length;
-  return `<div class="ready ${big ? 'big' : ''}"><div class="ready-h"><b>Board meeting readiness</b><span>${n} of 6 parts ready</span>${countHTML(big)}</div>
+  return `<div class="ready ${big ? 'big' : ''}"><div class="ready-h"><b>Board meeting readiness</b><span>${n} of ${p.length} parts ready</span>${countHTML(big)}</div>
    <div class="ready-parts">${p.map(x => `<span class="rp ${x.ok ? 'ok' : 'no'}" ${x.k !== 'agenda' ? `style="--c:${col(x.k)}"` : ''}>${esc(x.label)} ${x.ok ? '✓' : `<i>— ${esc(x.miss)}</i>`}</span>`).join('')}</div></div>`;
 }
 
@@ -262,8 +268,8 @@ function joinView() {
    <div class="row"><input id="code" class="inp" placeholder="e.g. NW9" maxlength="16" autocomplete="off"><button class="btn pri" data-act="join">Join</button></div></div></div>`;
 }
 function homeView() {
-  return `<div class="wrap"><h1>Choose your department</h1><p class="muted">Each department designs one wireframe screen of Northway’s new system. At the board meeting the five wireframe screens must work as one.</p>
-   ${vcHTML({ size: 'big', fill: k => `<a class="btn sm" href="#team/${k}">Join Team ${k} →</a>` })}
+  return `<div class="wrap"><h1>Choose your department</h1><p class="muted">Each department designs one wireframe screen of Northway’s new system. At the board meeting the six wireframe screens (five teams + Management) must work as one.</p>
+   ${vcHTML({ size: 'big', fill: k => k === 'F' ? `<a class="btn sm" href="#team/F">Tutor’s demo team →</a>` : `<a class="btn sm" href="#team/${k}">Join Team ${k} →</a>` })}
 </div>`;
 }
 
@@ -272,12 +278,12 @@ function teamView(k) {
   const Tm = TEAMS[k], t = T(k), un = unlocked(k);
   let tab = ui.tab[k] || 'brief';
   const tabs = [['brief', '1 · Brief'], ['check', '2 · Check questions'], ['facts', '3 · Facts' + (un ? '' : ' 🔒')], ['build', '4 · Build your wireframe screen' + (un ? '' : ' 🔒')], ['submit', '5 · Submit' + (un ? '' : ' 🔒')]];
-  if (k === 'E') tabs.push(['agenda', '★ Agenda']);
+  if (k === 'F') tabs.push(['agenda', '★ Agenda']);
   let body;
   if (tab === 'brief') body = briefTab(k);
   else if (tab === 'check') body = checkTab(k);
   else if (tab === 'agenda') body = agendaTab();
-  else if (!un) body = `<div class="banner lock">🔒 This step opens when all four check questions are answered correctly.</div>`;
+  else if (!un) body = `<div class="banner lock">🔒 This step opens when all check questions are answered correctly.</div>`;
   else if (tab === 'facts') body = factsTab(k);
   else if (tab === 'build') body = buildTab(k);
   else body = submitTab(k);
@@ -295,12 +301,12 @@ function briefTab(k) {
   return `<div class="grid2"><div class="panel">
     <h2>Your role</h2><p>${esc(Tm.role)}</p>
     <h2 style="margin-top:14px">Your wireframe screen</h2><p>${esc(Tm.screen)}</p><p class="small muted">One wireframe screen = a single phone screen, drawn in this system’s wireframe tool (step 4).</p>
-    <h2 style="margin-top:14px">Four steps — submit by minute 60</h2>
+    <h2 style="margin-top:14px">Four steps — submit within 60 minutes</h2>
     <ol class="steps"><li><b>Read</b> your printed pack: ${esc(Tm.read)}.</li>
-     <li><b>Check questions</b> — get all four right to unlock your facts.</li>
-     <li><b>Choose 3–4 facts</b> out of 15. Ask: <i>${esc(Tm.test)}</i></li>
+     <li><b>Check questions</b> — get all ${nq(k)} right to unlock your facts.</li>
+     <li><b>Choose ${pickTxt(k)} facts</b> out of ${Tm.facts.length}. Ask: <i>${esc(Tm.test)}</i></li>
      <li><b>Build your wireframe screen</b> — add the Material 3 component named under each chosen fact. Then submit.</li></ol>
-    ${k === 'E' ? `<div class="banner warn">You also <b>chair the board meeting</b>. Build the agenda in the ★ Agenda tab before minute 60.</div>` : ''}
+    ${k === 'F' ? `<div class="banner warn"><b>Demo team.</b> Your tutor shows every step with this team, builds the agenda (★ Agenda tab) and chairs the board meeting as Management.</div>` : ''}
     <p><button class="btn pri" data-act="tab" data-k="${k}" data-tab="check">We have read the text → check questions</button></p></div>
    <div><div class="panel"><h3>Where you sit in the value chain</h3>${vcHTML({ size: 'mini', hi: [k] })}</div>
     ${rulesBox(k)}</div></div>`;
@@ -316,12 +322,12 @@ function ensureQset(k) {
   const qs = TEAMS[k].qs; const core = [], team = [];
   qs.forEach((q, i) => (q.pool === 'core' ? core : team).push(i));
   const pick = (a, n) => a.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).slice(0, n).map(x => x[1]);
-  const qset = [...pick(core, 1), ...pick(team, 3)];
+  const [nc, nt] = drawOf(k); const qset = [...pick(core, nc), ...pick(team, nt)];
   setTeam(k, { qset }); return qset;
 }
 function checkTab(k) {
   const t = T(k); const qset = ensureQset(k); const all = unlocked(k);
-  return `${all ? `<div class="banner ok">✓ ${t.override && !qset.every(i => t.solved[i]) ? 'Your tutor unlocked your facts.' : 'All four correct — your facts are unlocked.'} <button class="btn sm" data-act="tab" data-k="${k}" data-tab="facts">Go to facts →</button></div>`
+  return `${all ? `<div class="banner ok">✓ ${t.override && !qset.every(i => t.solved[i]) ? 'Your tutor unlocked your facts.' : 'All correct — your facts are unlocked.'} <button class="btn sm" data-act="tab" data-k="${k}" data-tab="facts">Go to facts →</button></div>`
       : `<p class="muted">Answer with a word or number from your <b>printed text</b>. Try as many times as you need.</p>`}
    ${qset.map((qi, n) => {
     const q = TEAMS[k].qs[qi]; const s = t.solved[qi]; const tries = t.tries[qi] || 0;
@@ -336,7 +342,7 @@ function factsTab(k) {
     Choose a fact only if that component helps the person using your wireframe screen: <i>${esc(Tm.test)}</i>
     Leave facts that add nothing — and the one that contradicts your reading.</p>
     <p class="small">What each component looks like: <a href="https://m3.material.io/components" target="_blank" rel="noopener">m3.material.io/components</a></p></div>
-   <div class="banner ${n >= 3 && n <= 4 ? 'ok' : 'warn'}"><b>${n} of 3–4 chosen.</b></div>
+   <div class="banner ${n >= pickOf(k)[0] && n <= pickOf(k)[1] ? 'ok' : 'warn'}"><b>${n} of ${pickTxt(k)} chosen.</b></div>
    <div class="facts">${Tm.seq.map((id, i) => {
     const f = FACT[id]; const on = t.picked.includes(id); const [name, ...rest] = f.screen.split(' — ');
     return `<button class="fact ${on ? 'on' : ''}" data-act="pick" data-k="${k}" data-id="${id}" ${locked ? 'disabled' : ''}><span class="n">${i + 1}</span><span><span class="ft">${esc(f.text)}</span><span class="os">On your wireframe screen: <b>${esc(name)}</b> — ${esc(rest.join(' — '))}</span></span></button>`;
@@ -366,20 +372,20 @@ function buildTab(k) {
 }
 function submitTab(k) {
   const t = T(k), c = submitChecks(k), ok = c.every(x => x[0]);
-  const others = TK.filter(x => x !== k && T(x).lockedAt).length;
+  const others = STUDENTS.filter(x => x !== k && T(x).lockedAt).length;
   return `${!t.lockedAt && others >= 2 ? `<div class="banner bad">Your team is blocking the board meeting — ${others} other team${others > 1 ? 's have' : ' has'} already submitted.</div>` : ''}
    <div class="grid2"><div class="panel"><h2>Ready to submit?</h2><ul class="reqs">${c.map(([o, l]) => `<li class="${o ? 'ok' : ''}"><span>${esc(l)}</span></li>`).join('')}</ul>
     <p style="margin-top:14px">${t.lockedAt ? `<span class="tag ok">Submitted at ${fmt(t.lockedAt)}</span>` : `<button class="btn pri" data-act="lock" data-k="${k}" ${ok ? '' : 'disabled'}>Submit to the board</button>`}</p>
     <p class="small muted">After submitting, nothing can be changed.</p></div>
    <div class="panel"><h2>At the board meeting you present</h2>
     <p><b>Speaker 1 — your wireframe screen (1 minute)</b></p><ol class="steps"><li>Who uses this wireframe screen and what they do with it.</li><li>Point to each component: its Material 3 name and the fact it comes from.</li><li>One thing your wireframe screen <b>needs from</b> another wireframe screen, and one thing it <b>sends to</b> one.</li></ol>
-    <p><b>Speaker 2 — the original question</b><br>${k === 'D' || k === 'C' ? `<b>${DECISIONS[2].t}:</b> ${esc(DECISIONS[2].d)}` : `<b>${DECISIONS[1].t}</b> ${esc(DECISIONS[1].d)}`} One or two sentences, backed by one of your facts.</p></div></div>`;
+    ${k === 'F' ? `<p><b>Chair (your tutor)</b><br>Presents the dashboard last, connects the system with the board and asks the two original questions.</p>` : `<p><b>Speaker 2 — the original question</b><br>${k === 'D' || k === 'C' ? `<b>${DECISIONS[2].t}:</b> ${esc(DECISIONS[2].d)}` : `<b>${DECISIONS[1].t}</b> ${esc(DECISIONS[1].d)}`} One or two sentences, backed by one of your facts.</p>`}</div></div>`;
 }
 function agendaTab() {
-  const a = T('E').agenda; const pub = !!a.publishedAt; const missing = TK.filter(k => !a.order.includes(k));
+  const a = T('F').agenda; const pub = !!a.publishedAt; const missing = TK.filter(k => !a.order.includes(k));
   const can = !missing.length && (a.opening || '').trim().length >= 10;
   return `<div class="grid2"><div class="panel"><h2>Board meeting agenda</h2>
-   <p class="muted small">You chair the meeting (25 minutes): each team presents its wireframe screen (about 1 minute), then the board connects the wireframe screens into one system, then answers the two original questions.</p>
+   <p class="muted small">You chair the meeting (20 minutes): each team presents its wireframe screen (about 1 minute), then the board connects the wireframe screens into one system, then answers the two original questions. Build this agenda during the demo, so students see it.</p>
    <h3>1. Order of presentations</h3>
    ${a.order.map((k, i) => `<div class="slot"><span class="num">${i + 1}</span><span class="dot" style="background:${col(k)}"></span><span style="flex:1"><b>Team ${k}</b> · ${esc(TEAMS[k].name)}</span>${pub ? '' : `<button class="btn sm" data-act="ag-mv" data-i="${i}" data-d="-1">↑</button><button class="btn sm" data-act="ag-mv" data-i="${i}" data-d="1">↓</button><button class="btn sm danger" data-act="ag-rm" data-i="${i}">✕</button>`}</div>`).join('') || '<p class="muted small">No teams yet.</p>'}
    ${pub ? '' : `<div class="row">${missing.map(k => `<button class="btn sm" data-act="ag-add" data-k="${k}">+ Team ${k}</button>`).join('')}</div>`}
@@ -387,7 +393,7 @@ function agendaTab() {
    <textarea class="inp" data-ag="opening" rows="4" ${pub ? 'disabled' : ''} placeholder="Why are we meeting, and what must we decide today?">${esc(a.opening)}</textarea>
    <p style="margin-top:12px">${pub ? `<span class="tag ok">Published at ${fmt(a.publishedAt)}</span> <button class="btn sm" data-act="ag-unpub">Edit again</button>` : `<button class="btn pri" data-act="ag-pub" ${can ? '' : 'disabled'}>Publish the agenda</button>`}</p>
    ${!pub && !can ? `<p class="small muted">${missing.length ? `Every team needs a slot (missing: ${missing.join(', ')}). ` : ''}${(a.opening || '').trim().length < 10 ? 'Write the opening statement.' : ''}</p>` : ''}</div>
-   <div class="panel"><h3>Chair’s running order</h3><ol class="steps"><li>Open with your statement.</li><li>Call each team in agenda order — 1 minute each. Present your dashboard last.</li><li><b>Connect the system:</b> ask each team what it needs and sends; record every connection on the class screen. Every wireframe screen must connect to another, and your dashboard must receive data from all four teams. Follow order #NW-1042 through all five wireframe screens.</li><li><b>The two questions:</b> ask the teams, then type the board’s answers.</li><li>Close by reading the answers aloud.</li></ol></div></div>`;
+   <div class="panel"><h3>Chair’s running order</h3><ol class="steps"><li>Open with your statement.</li><li>Call each team in agenda order — 1 minute each. Present the Management dashboard last.</li><li><b>Connect the system:</b> ask each team what it needs and sends; record every connection on the class screen. Every wireframe screen must connect to another, and the dashboard must receive data from all five teams. Follow order #NW-1042 through all six wireframe screens.</li><li><b>The two questions:</b> ask the teams, then type the board’s answers.</li><li>Close with your feedback: what worked as one system, and what was missing.</li></ol></div></div>`;
 }
 
 /* ---------------- class screen ---------------- */
@@ -402,7 +408,7 @@ function boardView() {
     } else if (st === 'ready') head = `<div class="readyok"><h1>All departments ready.</h1><p>The chair can start the board meeting.</p><button class="btn pri big" data-act="start">Start board meeting</button></div>`;
     return `<div class="wrap screen"><div class="sbar"><h1>Northway Home · board meeting</h1>${countHTML(true)}</div>${head}${readyBar(true)}
      ${vcHTML({ size: 'big', bad: st === 'failed' ? badTeams : [], fill: k => { const [s, c] = teamStatus(k); const m = missingOf(k); return `<span class="tag ${c}">${s}</span>${m && m !== 'not submitted' ? `<div class="small missing">missing: ${esc(m)}</div>` : ''}`; } })}
-     ${st === 'waiting' ? `<p class="center muted" style="margin-top:16px">The board meeting can start only when all six parts are ready.${b.clock ? '' : ' (Clock not started.)'}</p>` : ''}</div>`;
+     ${st === 'waiting' ? `<p class="center muted" style="margin-top:16px">The board meeting can start only when all ${parts().length} parts are ready.${b.clock ? '' : ' (Clock not started.)'}</p>` : ''}</div>`;
   }
   const stages = [['present', '1 · Presentations'], ['connect', '2 · Connect the system'], ['questions', '3 · The two questions'], ['summary', 'Summary']];
   let body = '';
@@ -412,9 +418,9 @@ function boardView() {
   else body = summaryStage();
   return `<div class="wrap screen wide"><div class="sbar"><div class="tabs flat">${stages.map(([id, l]) => `<button class="${b.stage === id ? 'on' : ''}" data-act="stage" data-s="${id}">${l}</button>`).join('')}</div>${b.meeting.forced ? '<span class="tag warn">Started by the tutor — not all parts were ready</span>' : ''}</div>${body}</div>`;
 }
-const agendaOrder = () => { const a = T('E').agenda; return a.publishedAt && a.order.length === 5 ? a.order : TK; };
+const agendaOrder = () => { const a = T('F').agenda; return a.publishedAt && a.order.length === TK.length ? a.order : TK; };
 function presentStage() {
-  const ord = agendaOrder(); const b = B(); const k = ord.includes(b.spot) ? b.spot : ord[0]; const i = ord.indexOf(k); const t = T(k); const a = T('E').agenda;
+  const ord = agendaOrder(); const b = B(); const k = ord.includes(b.spot) ? b.spot : ord[0]; const i = ord.indexOf(k); const t = T(k); const a = T('F').agenda;
   return `${a.opening ? `<div class="panel" style="margin-bottom:12px"><b>Chair’s opening:</b> ${esc(a.opening)}</div>` : ''}
    <div class="row" style="margin-bottom:12px">${ord.map((x, j) => `<button class="btn sm ${x === k ? 'pri' : ''}" data-act="spot" data-k="${x}">${j + 1}. Team ${x}</button>`).join('')}</div>
    <div class="sbar"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(TEAMS[k].vc)}</div><h1>${esc(TEAMS[k].name)}</h1></div>
@@ -426,13 +432,13 @@ function presentStage() {
 function connChecks() {
   const c = B().connections || [];
   const linked = k => c.some(x => x.from === k || x.to === k);
-  const feeds = ['A', 'B', 'C', 'D'].map(k => [k, c.some(x => x.from === k && x.to === 'E')]);
+  const feeds = STUDENTS.map(k => [k, c.some(x => x.from === k && x.to === 'F')]);
   const order = TK.map(k => [k, /nw-?1042/i.test((T(k).wf || []).map(e => e.text || '').join(' '))]);
   return { every: TK.map(k => [k, linked(k)]), feeds, order };
 }
 function mapSVG() {
   const c = B().connections || []; const css = k => getComputedStyle(document.documentElement).getPropertyValue('--' + k).trim();
-  const N = { A: [130, 60], B: [570, 60], C: [570, 300], D: [130, 300], E: [350, 180] }; const hw = 78, hh = 22;
+  const N = { A: [110, 50], B: [590, 50], E: [110, 180], F: [400, 180], D: [110, 310], C: [590, 310] }; const hw = 78, hh = 22;
   const edge = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1]; const s = Math.min(dx ? hw / Math.abs(dx) : 1e9, dy ? hh / Math.abs(dy) : 1e9); return [p[0] + dx * s, p[1] + dy * s]; };
   const groups = {}; c.forEach((x, i) => { const key = [x.from, x.to].sort().join(''); (groups[key] = groups[key] || []).push(i); });
   const lines = c.map((x, i) => {
@@ -456,8 +462,8 @@ function checksHTML() {
 }
 function connectStage() {
   const c = B().connections || []; const f = ui.conn;
-  return `<h1>Connect the system</h1><p class="muted">Follow order #NW-1042 through the five wireframe screens. For each link: which wireframe screen sends what to which wireframe screen?</p>
-   <div class="fivescreens">${['A', 'B', 'C', 'D', 'E'].map(k => `<div><div class="teamchip small" style="color:${col(k)}">${k} · ${esc(NAV[k])}</div>${phoneHTML(k, { scale: .4, labels: false })}</div>`).join('')}</div>
+  return `<h1>Connect the system</h1><p class="muted">Follow order #NW-1042 through all six wireframe screens. For each link: which wireframe screen sends what to which wireframe screen?</p>
+   <div class="fivescreens">${TK.map(k => `<div><div class="teamchip small" style="color:${col(k)}">${k} · ${esc(NAV[k])}</div>${phoneHTML(k, { scale: .4, labels: false })}</div>`).join('')}</div>
    <div class="grid2" style="margin-top:14px"><div class="panel">
     <div class="row"><select class="inp" data-cf="from">${TK.map(k => `<option ${f.from === k ? 'selected' : ''}>${k}</option>`).join('')}</select> sends
      <input class="inp" data-cf="what" style="flex:1;min-width:180px" placeholder="what? e.g. chosen pick-up point" value="${esc(f.what)}"> to
@@ -505,7 +511,7 @@ function observerView() {
      <td class="small">${(t.wf || []).length} components<br>facts on screen: ${items.filter(i => i.ok).length}/${items.length}<br>rules: ${rules.filter(r => r.ok).length}/3</td>
      <td class="small">${t.lockedAt ? fmt(t.lockedAt) : '—'}</td></tr>`;
   }).join('')}</tbody></table>
-   <div class="grid2" style="margin-top:14px"><div class="panel"><h3>Agenda (Team E)</h3>${T('E').agenda.publishedAt ? `<p class="small"><span class="tag ok">Published ${fmt(T('E').agenda.publishedAt)}</span> · ${T('E').agenda.order.join(' → ')}</p><p class="small"><i>${esc(T('E').agenda.opening)}</i></p>` : `<p class="small muted">Not published. ${T('E').agenda.order.length}/5 teams on it.</p>`}</div>
+   <div class="grid2" style="margin-top:14px"><div class="panel"><h3>Agenda (you, Team F)</h3>${T('F').agenda.publishedAt ? `<p class="small"><span class="tag ok">Published ${fmt(T('F').agenda.publishedAt)}</span> · ${T('F').agenda.order.join(' → ')}</p><p class="small"><i>${esc(T('F').agenda.opening)}</i></p>` : `<p class="small muted">Not published. ${T('F').agenda.order.length}/${TK.length} teams on it.</p>`}</div>
     <div class="panel"><h3>The system (board meeting)</h3>${checksHTML()}<p class="small">${(b.connections || []).length} connections recorded.</p></div></div>
    <details class="panel" style="margin-top:14px"><summary><b>Answer key</b></summary>${TK.map(k => `<h3 style="margin-top:12px;color:${col(k)}">Team ${k}</h3>
     <ul class="small">${TEAMS[k].qs.map(q => `<li>[${q.pool}] ${esc(q.q)} → <b>${esc(q.a[0].replace('=', ''))}</b> <span class="muted">(${esc(q.where)})</span></li>`).join('')}</ul>
@@ -532,7 +538,7 @@ app.addEventListener('click', e => {
     case 'pick': {
       const id = b.dataset.id; let picked = [...t.picked];
       if (picked.includes(id)) picked = picked.filter(x => x !== id);
-      else { if (picked.length >= 4) { toast('You can choose up to 4 facts. Remove one first.'); return; } picked.push(id); }
+      else { if (picked.length >= pickOf(k)[1]) { toast(`You can choose up to ${pickOf(k)[1]} facts. Remove one first.`); return; } picked.push(id); }
       const p = { picked }; if (t.wf) p.wf = t.wf.map(el => !el.fact || picked.includes(el.fact) ? el : { ...el, fact: '' });
       setTeam(k, p); render(true); return;
     }
@@ -548,11 +554,11 @@ app.addEventListener('click', e => {
     case 'del': { const wf = (t.wf || []).filter(x => x.id !== ui.sel); ui.sel = null; setTeam(k, { wf }); render(true); return; }
     case 'dup': { const s = (t.wf || []).find(x => x.id === ui.sel); if (!s) return; const c = { ...s, id: 'e' + Date.now().toString(36), y: Math.min(640 - s.h, s.y + s.h + 8) }; ui.sel = c.id; setTeam(k, { wf: [...t.wf, c] }); render(true); return; }
     case 'lock': if (submitChecks(k).every(x => x[0])) { setTeam(k, { lockedAt: Date.now() }); ui.sel = null; toast('Submitted. Thank you!'); } render(true); return;
-    case 'ag-add': { const ag = T('E').agenda; setTeam('E', { agenda: { order: [...ag.order, k] } }); render(true); return; }
-    case 'ag-rm': { const o = [...T('E').agenda.order]; o.splice(+b.dataset.i, 1); setTeam('E', { agenda: { order: o } }); render(true); return; }
-    case 'ag-mv': { const o = [...T('E').agenda.order]; const i = +b.dataset.i, j = i + +b.dataset.d; if (j < 0 || j >= o.length) return;[o[i], o[j]] = [o[j], o[i]]; setTeam('E', { agenda: { order: o } }); render(true); return; }
-    case 'ag-pub': setTeam('E', { agenda: { publishedAt: Date.now() } }); render(true); return;
-    case 'ag-unpub': setTeam('E', { agenda: { publishedAt: null } }); render(true); return;
+    case 'ag-add': { const ag = T('F').agenda; setTeam('F', { agenda: { order: [...ag.order, k] } }); render(true); return; }
+    case 'ag-rm': { const o = [...T('F').agenda.order]; o.splice(+b.dataset.i, 1); setTeam('F', { agenda: { order: o } }); render(true); return; }
+    case 'ag-mv': { const o = [...T('F').agenda.order]; const i = +b.dataset.i, j = i + +b.dataset.d; if (j < 0 || j >= o.length) return;[o[i], o[j]] = [o[j], o[i]]; setTeam('F', { agenda: { order: o } }); render(true); return; }
+    case 'ag-pub': setTeam('F', { agenda: { publishedAt: Date.now() } }); render(true); return;
+    case 'ag-unpub': setTeam('F', { agenda: { publishedAt: null } }); render(true); return;
     case 'start': if (boardState() === 'ready') setBoard({ meeting: { startedAt: Date.now(), forced: false }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
     case 'force': setBoard({ meeting: { startedAt: Date.now(), forced: true }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
     case 'stage': setBoard({ stage: b.dataset.s }); render(true); return;
@@ -574,7 +580,7 @@ app.addEventListener('input', e => {
   const el = e.target;
   if (el.dataset.bc) { const [k, id] = el.dataset.bc.split('|'); later(el.dataset.bc, () => setTeam(k, { because: { [id]: el.value } })); return; }
   if (el.dataset.ans) { ui.answers[el.dataset.ans] = el.value; return; }
-  if (el.dataset.ag) { later('ag', () => setTeam('E', { agenda: { opening: el.value } })); const p = app.querySelector('[data-act="ag-pub"]'); if (p) p.disabled = !(TK.every(k => T('E').agenda.order.includes(k)) && el.value.trim().length >= 10); return; }
+  if (el.dataset.ag) { later('ag', () => setTeam('F', { agenda: { opening: el.value } })); const p = app.querySelector('[data-act="ag-pub"]'); if (p) p.disabled = !(TK.every(k => T('F').agenda.order.includes(k)) && el.value.trim().length >= 10); return; }
   if (el.dataset.answer) { later('ans' + el.dataset.answer, () => setBoard({ answers: { [el.dataset.answer]: el.value } })); return; }
   if (el.dataset.cf === 'what') { ui.conn.what = el.value; return; }
 });
@@ -635,7 +641,8 @@ function demo() {
     B: [['card', '#NW-1042 · Velvet cushion · Failed', 16, 72, ''], ['segmented', 'Home delivery,Pick-up point', 30, 184, 'B1'], ['list', 'Spar, Bold Street · 0.3 mi', 16, 240, 'B2'], ['switch', 'Text me when it arrives', 16, 416, 'B3'], ['card', 'Tracking: all 3 couriers in one place', 16, 456, 'B4']],
     C: [['tabs', 'Orders,Deliveries,Messages', 0, 64, 'C4'], ['card', 'Jane Smith · #NW-1042 · Failed', 16, 120, ''], ['badge', 'At risk', 272, 128, 'C1'], ['list', 'Order · call · email · delivery', 16, 232, 'C2'], ['chips', 'AI reply drafted,Needs a person', 16, 408, 'C3']],
     D: [['card', 'AI drafted 42 replies — review 3 flagged', 16, 72, 'D1'], ['dialog', 'Your decision: styling advice for #NW-1042', 30, 184, 'D4'], ['progress', 'Styling skills', 30, 384, 'D3'], ['button', 'Ask my mentor', 100, 416, 'D2']],
-    E: [['card', 'Failed today: 18% incl. #NW-1042', 16, 72, ''], ['card', 'ERP fit: 40% of processes change', 16, 184, 'E1'], ['progress', 'Lock-in: 7 years', 30, 296, 'E4'], ['card', 'Styling requests — no adviser yet', 16, 328, 'E3'], ['card', 'Keep in-house: logistics stays ours', 16, 448, 'E2']]
+    E: [['card', 'ERP fit: 40% of processes change', 16, 72, 'E1'], ['progress', 'Lock-in: 7 years', 30, 184, 'E2'], ['card', '#NW-1042 · one shared record', 16, 216, 'E3'], ['list', 'Connected: couriers, suppliers, payments', 16, 328, 'E4']],
+    F: [['card', 'Failed today: 18% incl. #NW-1042', 16, 72, ''], ['card', 'Styling requests — no adviser yet', 16, 184, 'F2'], ['card', 'Keep in-house: logistics stays ours', 16, 296, 'F1']]
   };
   TK.forEach(k => {
     const qset = ensureQset(k); const solved = {}; qset.forEach(i => solved[i] = true);
@@ -643,8 +650,8 @@ function demo() {
     const picked = [...new Set(W[k].map(r => r[4]).filter(Boolean))]; const because = {}; picked.forEach(id => because[id] = 'This matters because another team’s wireframe screen depends on it.');
     setTeam(k, { qset, solved, picked, because, wf, lockedAt: Date.now() });
   });
-  setTeam('E', { agenda: { order: ['A', 'B', 'C', 'D', 'E'], opening: 'We are here to turn five wireframe screens into one Northway system, and then decide two questions.', publishedAt: Date.now() } });
-  toast('Sample work added for all five teams.');
+  setTeam('F', { agenda: { order: ['A', 'B', 'C', 'D', 'E', 'F'], opening: 'We are here to turn six wireframe screens into one Northway system, and then decide two questions.', publishedAt: Date.now() } });
+  toast('Sample work added for all six teams.');
 }
 
 /* ---------------- start ---------------- */
