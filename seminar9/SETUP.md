@@ -70,8 +70,9 @@ In the `dbmseminars` repository: **Add file → Upload files** → drag in the f
 
 - Choose a new session code for each class (e.g. `NW9-MON`, `NW9-TUE`) and write it on the board / printouts.
 - Students open `filipbialy.github.io/dbmseminars/seminar9`, type the code, choose their team.
+- The top bar on every page has a menu: **Teams · Class screen · Observer · Change session**. Only the observer view asks for the PIN (each device remembers it once entered).
 - Class screen (projector): `…/seminar9/?s=CODE#board`
-- Observer view (your laptop): `…/seminar9/?s=CODE#observer` → PIN → **Start the 60-minute clock** when students start reading.
+- Observer view: `…/seminar9/?s=CODE#observer` → **Start the 60-minute clock** when students start reading.
 - Observer controls: unlock a stuck team’s facts · **+5 minutes** (once) · **Start meeting anyway** · move the class screen between stages · reset.
 
 Without a Firebase config the page runs in **test mode**: everything works, but only between tabs of one browser. Use it to try things out (observer view → “Fill with sample work”).

@@ -235,7 +235,7 @@ function readyBar(big = false) {
 }
 
 /* ---------------- routing & rendering ---------------- */
-let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: sessionStorage.getItem('nw9pin') === '1', lastState: null, conn: { from: 'B', to: 'C', what: '' } };
+let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: localStorage.getItem('nw9tutor') === '1', lastState: null, conn: { from: 'B', to: 'C', what: '' } };
 function route() { const h = location.hash.replace('#', ''); if (h.startsWith('team/')) return { v: 'team', k: h.slice(5) }; if (h === 'board') return { v: 'board' }; if (h === 'observer') return { v: 'observer' }; return { v: 'home' }; }
 addEventListener('hashchange', () => { ui.sel = null; render(true); });
 let pending = false;
@@ -247,7 +247,8 @@ function render(force = false) {
   if (!force && inputFocused()) { deferred = true; return; }
   if (!SESSION) { app.innerHTML = joinView(); return; }
   const r = route();
-  document.getElementById('bar').innerHTML = `<span><b>Northway Home</b> · Seminar 9</span><span>Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · <span class="testtag">TEST MODE — this browser only</span>' : ''}</span>`;
+  const tl = `<span class="menu"><a href="#">Teams</a><a href="#board">Class screen</a><a href="#observer">Observer</a><a href="#" data-bar="leave">Change session</a></span>`;
+  document.getElementById('bar').innerHTML = `<span><b>Northway Home</b> · Seminar 9</span>${tl}<span>Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · <span class="testtag">TEST MODE — this browser only</span>' : ''}</span>`;
   if (r.v === 'team' && TEAMS[r.k]) { app.innerHTML = teamView(r.k); bindPhone(r.k); }
   else if (r.v === 'board') app.innerHTML = boardView();
   else if (r.v === 'observer') app.innerHTML = ui.pinOk ? observerView() : pinView();
@@ -263,7 +264,7 @@ function joinView() {
 function homeView() {
   return `<div class="wrap"><h1>Choose your department</h1><p class="muted">Each department designs one screen of Northway’s new system. At the board meeting the five screens must work as one.</p>
    ${vcHTML({ size: 'big', fill: k => `<a class="btn sm" href="#team/${k}">Join Team ${k} →</a>` })}
-   <p class="small muted" style="margin-top:24px">Tutor: <a href="#board">class screen</a> · <a href="#observer">observer view</a> · <a href="#" data-act="leave">change session</a></p></div>`;
+</div>`;
 }
 
 /* ---------------- team view ---------------- */
@@ -478,7 +479,7 @@ function summaryStage() {
 
 /* ---------------- observer ---------------- */
 function pinView() {
-  return `<div class="wrap narrow"><div class="panel"><h2>Observer view</h2><p class="muted">Enter the tutor PIN.</p><div class="row"><input id="pin" class="inp" type="password" autocomplete="off"><button class="btn pri" data-act="pin">Open</button></div></div></div>`;
+  return `<div class="wrap narrow"><div class="panel"><h2>Observer view</h2><p class="muted">Tutor only — enter the PIN.</p><div class="row"><input id="pin" class="inp" type="password" autocomplete="off"><button class="btn pri" data-act="pin">Open</button></div></div></div>`;
 }
 const KIND = { key: ['key', 'ok'], case: ['true case fact', 'ok'], false: ['contradicts reading', 'bad'], mis: ['misleading', 'bad'], dis: ['irrelevant', 'warn'] };
 function observerView() {
@@ -520,7 +521,7 @@ app.addEventListener('click', e => {
   switch (a) {
     case 'join': { const v = (document.getElementById('code').value || '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, ''); if (v) startSession(v); return; }
     case 'leave': e.preventDefault(); localStorage.removeItem('nw9:last'); location.href = location.pathname; return;
-    case 'pin': if (document.getElementById('pin').value === String(CFG.tutorPin || '')) { ui.pinOk = true; sessionStorage.setItem('nw9pin', '1'); render(true); } else toast('Wrong PIN'); return;
+    case 'pin': if (document.getElementById('pin').value === String(CFG.tutorPin || '')) { ui.pinOk = true; localStorage.setItem('nw9tutor', '1'); render(true); } else toast('Wrong PIN'); return;
     case 'tab': ui.tab[k] = b.dataset.tab; ui.sel = null; render(true); scrollTo(0, 0); return;
     case 'check': {
       const qi = +b.dataset.q; const inp = app.querySelector(`[data-ans="${k}-${qi}"]`); ui.answers[k + '-' + qi] = inp.value;
@@ -612,6 +613,11 @@ function bindPhone(k) {
     addEventListener('pointermove', move); addEventListener('pointerup', up);
   });
 }
+
+document.getElementById('bar').addEventListener('click', e => {
+  const a = e.target.closest('[data-bar]'); if (!a) return; e.preventDefault();
+  if (a.dataset.bar === 'leave') { localStorage.removeItem('nw9:last'); location.href = location.pathname; }
+});
 
 /* ---------------- ticking: countdown + failure detection ---------------- */
 setInterval(() => {
