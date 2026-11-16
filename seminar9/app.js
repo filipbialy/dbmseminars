@@ -15,7 +15,7 @@ const drawOf = k => TEAMS[k].draw || [1, 3];
 const pickOf = k => TEAMS[k].pick || [4, 4];
 const nq = k => drawOf(k)[0] + drawOf(k)[1];
 const pickTxt = k => { const [a, b] = pickOf(k); return a === b ? String(a) : `${a}–${b}`; };
-const PHASES = [[0, 13, 'Read your text'], [13, 18, 'Check questions'], [18, 33, 'Choose your facts'], [33, 58, 'Build your wireframe screen'], [58, 60, 'Submit']];
+const PHASES = [[0, 11, 'Read your text'], [11, 15, 'Check questions'], [15, 27, 'Choose your facts'], [27, 48, 'Build your wireframe screen'], [48, 50, 'Submit']];
 const app = document.getElementById('app');
 
 /* ---------------- components (Material 3 names) ---------------- */
@@ -165,7 +165,7 @@ function parts() {
   return p;
 }
 const allReady = () => parts().every(p => p.ok);
-const deadline = () => { const b = B(); return b.clock ? b.clock + (60 + (b.extension || 0)) * 60000 : null; };
+const deadline = () => { const b = B(); return b.clock ? b.clock + (50 + (b.extension || 0)) * 60000 : null; };
 function boardState() {
   const b = B(); if (b.meeting) return 'meeting';
   if (b.failedAt) return 'failed';
@@ -355,7 +355,7 @@ function briefTab(k) {
     <div class="banner warn" style="margin-bottom:10px"><b>Northway</b> is the company you design for. The case you read (${k === 'D' ? 'Alibaba/Cainiao and the HBR article' : 'Alibaba/Cainiao'}) is only an <b>example</b> of how others solved similar problems: read it, answer the check questions, and keep it in mind for ideas.</div>
     <h2>Your role</h2><p>${esc(Tm.role)}</p>
     <h2 style="margin-top:14px">Your wireframe screen</h2><p>${esc(Tm.screen)}</p><p class="small muted">One wireframe screen = a single phone screen of <b>Northway’s new integrated ERP system</b>, drawn in this system’s wireframe tool (step 4). Every screen is used by Northway staff.</p>
-    <h2 style="margin-top:14px">Four steps — submit within 60 minutes</h2>
+    <h2 style="margin-top:14px">Four steps — submit within 50 minutes</h2>
     <ol class="steps"><li><b>Read</b> your printed pack: ${esc(Tm.read)}.</li>
      <li><b>Check questions</b> — get all ${nq(k)} right to unlock your facts.</li>
      <li><b>Choose ${pickTxt(k)} facts</b> out of ${Tm.facts.length}. Ask: <i>${esc(Tm.test)}</i></li>
@@ -462,7 +462,7 @@ function boardView() {
       const miss = p.filter(x => !x.ok).map(x => x.k === 'agenda' ? 'the agenda' : `${TEAMS[x.k].short} (Team ${x.k})`);
       head = `<div class="fail"><h1>Board meeting cancelled — the project failed.</h1><p>Northway’s new system cannot work without: <b>${esc(miss.join(', '))}</b>.</p></div>`;
     } else if (st === 'ready') head = `<div class="readyok"><h1>All departments ready.</h1><p>The chair can start the board meeting.</p><button class="btn pri big" data-act="start">Start board meeting</button></div>`;
-    return `<div class="wrap screen"><div class="sbar"><h1>Northway Home · board meeting</h1>${countHTML(true)}</div><div class="intro">Northway Home is a UK online homeware retailer with 400 staff, one warehouse and three courier firms, but its systems don’t talk to each other: 18% of first deliveries fail and customers are leaving. Today each of six departments designs one wireframe screen of Northway’s new integrated ERP system, and after 60 minutes the board meets to check that the six screens work as one system and to answer two questions: should Northway fit the software or redesign itself, and what happens to junior employees?</div>${head}${readyBar(true)}
+    return `<div class="wrap screen"><div class="sbar"><h1>Northway Home · board meeting</h1>${countHTML(true)}</div><div class="intro">Northway Home is a UK online homeware retailer with 400 staff, one warehouse and three courier firms, but its systems don’t talk to each other: 18% of first deliveries fail and customers are leaving. Today each of six departments designs one wireframe screen of Northway’s new integrated ERP system, and after 50 minutes the board meets to check that the six screens work as one system and to answer two questions: should Northway fit the software or redesign itself, and what happens to junior employees?</div>${head}${readyBar(true)}
      ${vcHTML({ size: 'big', bad: st === 'failed' ? badTeams : [], fill: k => { const [s, c] = teamStatus(k); const m = missingOf(k); return `<span class="tag ${c}">${s}</span>${m && m !== 'not submitted' ? `<div class="small missing">missing: ${esc(m)}</div>` : ''}`; } })}
      ${st === 'waiting' ? `<p class="center muted" style="margin-top:16px">The board meeting can start only when all ${parts().length} parts are ready.${b.clock ? '' : ' (Clock not started.)'}</p>` : ''}</div>`;
   }
@@ -586,7 +586,7 @@ function observerView() {
   const b = B(); const st = boardState();
   return `<div class="wrap"><div class="thead"><div><h1>Observer view</h1><p class="muted" style="margin:0">Only you see this page. Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · test mode' : ''}.</p></div>${countHTML()}</div>
    <div class="panel" style="margin-bottom:14px"><div class="row">
-    <b class="small">Clock</b>${b.clock ? `<span class="small">started ${fmt(b.clock)}</span><button class="btn sm" data-act="clock-stop">Stop</button>` : `<button class="btn sm pri" data-act="clock-start">Start the 60-minute clock</button>`}
+    <b class="small">Clock</b>${b.clock ? `<span class="small">started ${fmt(b.clock)}</span><button class="btn sm" data-act="clock-stop">Stop</button>` : `<button class="btn sm pri" data-act="clock-start">Start the 50-minute clock</button>`}
     <span class="sep"></span><b class="small">Deadline</b><button class="btn sm" data-act="extend" ${b.extension ? 'disabled' : ''}>+5 minutes (once)</button>
     <button class="btn sm" data-act="force" ${st === 'meeting' ? 'disabled' : ''}>Start meeting anyway</button>
     <span class="tag ${st === 'failed' ? 'bad' : st === 'meeting' || st === 'ready' ? 'ok' : ''}">State: ${st}</span>
