@@ -1,5 +1,12 @@
 /* Seminar 9 · Northway Home board meeting — application
    Data: Firebase Firestore (when config.js has a firebase config) or this browser only (test mode). */
+const APP_VERSION = 'S9-1116-0915';
+if (!window.CONTENT || window.CONTENT.VERSION !== APP_VERSION || !window.CONTENT.TEAMS.F) {
+  document.getElementById('app').innerHTML = `<div class="wrap narrow"><div class="panel" style="border:2px solid #A8322A"><h2>The site files are out of step</h2>
+    <p>This page needs <b>index.html</b>, <b>app.js</b> and <b>content.js</b> from the same update (version <b>${APP_VERSION}</b>), but content.js is version <b>${(window.CONTENT && window.CONTENT.VERSION) || 'unknown (older)'}</b>.</p>
+    <p>Upload all three files together to the <b>seminar9</b> folder, wait 1–2 minutes and reload with Ctrl+Shift+R.</p></div></div>`;
+  throw new Error('Version mismatch: app ' + APP_VERSION + ' / content ' + (window.CONTENT && window.CONTENT.VERSION));
+}
 const { TEAMS, NAV, STATUS, DECISIONS } = window.CONTENT;
 const CFG = window.SEMINAR_CONFIG || {};
 const TK = ['A', 'B', 'C', 'D', 'E', 'F'];
@@ -43,7 +50,7 @@ const factNo = id => TEAMS[FACT[id].team].seq.indexOf(id) + 1;
 /* ---------------- state ---------------- */
 let S = { teams: {}, board: {} };
 const TD = () => ({ qset: null, solved: {}, tries: {}, override: false, picked: [], because: {}, wf: null, lockedAt: null, agenda: { order: [], opening: '', publishedAt: null } });
-const BD = () => ({ clock: null, extension: 0, failedAt: null, meeting: null, stage: 'present', spot: null, connections: [], answers: { 1: '', 2: '' } });
+const BD = () => ({ clock: null, extension: 0, failedAt: null, meeting: null, stage: 'present', spot: null, showRef: false, connections: [], answers: { 1: '', 2: '' } });
 const isObj = v => v && typeof v === 'object' && !Array.isArray(v);
 function merge(a, b) { const o = { ...a }; for (const k in b) o[k] = isObj(b[k]) && isObj(a[k]) ? merge(a[k], b[k]) : b[k]; return o; }
 const T = k => merge(TD(), S.teams[k] || {});
@@ -219,6 +226,25 @@ function phoneHTML(k, { edit = false, labels = true, scale = 1, sel = null } = {
   }).join('');
   return `<div class="phone-out" style="width:${360 * scale + 4}px;height:${640 * scale + 4}px"><div class="phone ${edit ? 'edit' : 'view'}" ${edit ? 'id="phone"' : ''} style="transform:scale(${scale})">${els}${!wf.length ? '<div class="empty">No wireframe screen yet</div>' : ''}</div></div>`;
 }
+const refEls = k => [...frame(k), ...(TEAMS[k].ref || []).map((r, i) => { const d = CDEF[r[0]]; return { id: k + 'r' + i, type: r[0], text: r[1], x: r[2], y: r[3], w: d.w, h: d.h, fact: r[4] }; })];
+function refPhoneHTML(k, scale = 1) {
+  const els = refEls(k).map(e => `<div class="el" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px">${comp(e)}<span class="lbl ${e.fact ? 'f' : ''} ${e.y < 16 ? 'in' : ''}">${esc(CDEF[e.type].name)}${e.fact ? ' · fact ' + factNo(e.fact) : ''}</span></div>`).join('');
+  return `<div class="phone-out" style="width:${360 * scale + 4}px;height:${640 * scale + 4}px"><div class="phone view ref" style="transform:scale(${scale})">${els}</div></div>`;
+}
+function compareHTML(k) {
+  const t = T(k), wf = t.wf || [];
+  const shown = new Set(wf.filter(e => e.fact && FACT[e.fact] && FACT[e.fact].comp.includes(e.type)).map(e => e.fact));
+  const keys = TEAMS[k].facts.filter(f => f.kind === 'key');
+  const missing = keys.filter(f => !shown.has(f.id));
+  const KL = { false: 'a wrong lesson from the case', mis: 'a misleading fact', dis: 'an irrelevant fact' };
+  const extra = wf.filter(e => e.fact && FACT[e.fact] && FACT[e.fact].kind !== 'key');
+  const noOrder = !/nw-?1042/i.test(wf.map(e => e.text || '').join(' '));
+  const items = [
+    ...missing.map(f => `<li class="miss">Missing: <b>${esc(f.screen.split(' — ')[0])}</b> — ${esc(f.screen.split(' — ').slice(1).join(' — '))}</li>`),
+    ...extra.map(e => `<li class="diff">Different: <b>${esc(CDEF[e.type].name)}</b> comes from ${KL[FACT[e.fact].kind]} (fact ${factNo(e.fact)})</li>`),
+    ...(noOrder ? ['<li class="miss">Missing: order <b>#NW-1042</b> on the screen</li>'] : [])];
+  return `<div class="cmp"><h3>Compared with the reference</h3>${items.length ? `<ul>${items.join('')}</ul>` : '<p class="okline">✓ Every reference component is there.</p>'}</div>`;
+}
 function frame(k) {
   const nav = TK.map(x => (x === k ? '*' : '') + NAV[x]).join(',');
   return [{ id: 'f1', type: 'topappbar', text: 'Northway · ' + TEAMS[k].screenTitle, x: 0, y: 0, w: 360, h: 64, fact: '' },
@@ -241,7 +267,7 @@ function readyBar(big = false) {
 }
 
 /* ---------------- routing & rendering ---------------- */
-let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: localStorage.getItem('nw9tutor') === '1', lastState: null, conn: { from: 'B', to: 'C', what: '' } };
+let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: localStorage.getItem('nw9tutor') === '1', lastState: null, csel: null, cto: null, cedit: null, clabel: '' };
 function route() { const h = location.hash.replace('#', ''); if (h.startsWith('team/')) return { v: 'team', k: h.slice(5) }; if (h === 'board') return { v: 'board' }; if (h === 'observer') return { v: 'observer' }; return { v: 'home' }; }
 addEventListener('hashchange', () => { ui.sel = null; render(true); });
 let pending = false;
@@ -254,11 +280,12 @@ function render(force = false) {
   if (!SESSION) { app.innerHTML = joinView(); return; }
   const r = route();
   const tl = `<span class="menu"><a href="#">Teams</a><a href="#board">Class screen</a><a href="#observer">Observer</a><a href="#" data-bar="leave">Change session</a></span>`;
-  document.getElementById('bar').innerHTML = `<span><b>Northway Home</b> · Seminar 9</span>${tl}<span>Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · <span class="testtag">TEST MODE — this browser only</span>' : ''}</span>`;
+  document.getElementById('bar').innerHTML = `<span><b>Northway Home</b> · Seminar 9</span>${tl}<span>Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · <span class="testtag">TEST MODE — this browser only</span>' : ''} · <span style="opacity:.6">${APP_VERSION}</span></span>`;
   if (r.v === 'team' && TEAMS[r.k]) { app.innerHTML = teamView(r.k); bindPhone(r.k); }
   else if (r.v === 'board') app.innerHTML = boardView();
   else if (r.v === 'observer') app.innerHTML = ui.pinOk ? observerView() : pinView();
   else app.innerHTML = homeView();
+  requestAnimationFrame(drawConnMap);
 }
 
 /* ---------------- join / home ---------------- */
@@ -301,7 +328,7 @@ function briefTab(k) {
   return `<div class="grid2"><div class="panel">
     <div class="banner warn" style="margin-bottom:10px"><b>Northway</b> is the company you design for. The case you read (${k === 'D' ? 'Alibaba/Cainiao and the HBR article' : 'Alibaba/Cainiao'}) is only an <b>example</b> of how others solved similar problems: read it, answer the check questions, and keep it in mind for ideas.</div>
     <h2>Your role</h2><p>${esc(Tm.role)}</p>
-    <h2 style="margin-top:14px">Your wireframe screen</h2><p>${esc(Tm.screen)}</p><p class="small muted">One wireframe screen = a single phone screen, drawn in this system’s wireframe tool (step 4).</p>
+    <h2 style="margin-top:14px">Your wireframe screen</h2><p>${esc(Tm.screen)}</p><p class="small muted">One wireframe screen = a single phone screen of <b>Northway’s new integrated ERP system</b>, drawn in this system’s wireframe tool (step 4). Every screen is used by Northway staff.</p>
     <h2 style="margin-top:14px">Four steps — submit within 60 minutes</h2>
     <ol class="steps"><li><b>Read</b> your printed pack: ${esc(Tm.read)}.</li>
      <li><b>Check questions</b> — get all ${nq(k)} right to unlock your facts.</li>
@@ -338,16 +365,16 @@ function checkTab(k) {
 }
 function factsTab(k) {
   const Tm = TEAMS[k], t = T(k), locked = !!t.lockedAt, n = t.picked.length;
-  return `<div class="panel explain"><h3>How facts become your wireframe screen</h3>
-    <p>All facts are about <b>Northway</b>. Each one tells you something your wireframe screen could do; under it, <b>“On your wireframe screen”</b> names the <b>Material 3 component</b> it would become.
-    Choose a fact only if that component helps the person using your wireframe screen: <i>${esc(Tm.test)}</i>
+  return `<div class="panel explain"><h3>What the facts are for</h3>
+    <p>Each fact describes <b>how Northway works today</b> in your area (${esc(Tm.short.toLowerCase())}). Your job is to translate the right facts into a <b>functional wireframe screen for Northway’s new integrated ERP system</b> — the screen your department will use.</p>
+    <p>Every fact comes with a <b>wireframe instruction</b>: the Material 3 component to add and exactly what it must show. Choose the ${pickTxt(k)} facts whose component helps the person using your screen: <i>${esc(Tm.test)}</i>
     Leave facts that add nothing — and the one that draws a <b>wrong lesson from the case</b>.</p>
     <p class="small">Keep the case you read in mind: it shows how another company solved similar problems. It is an example, not your company.</p>
     <p class="small">What each component looks like: <a href="https://m3.material.io/components" target="_blank" rel="noopener">m3.material.io/components</a></p></div>
    <div class="banner ${n >= pickOf(k)[0] && n <= pickOf(k)[1] ? 'ok' : 'warn'}"><b>${n} of ${pickTxt(k)} chosen.</b></div>
    <div class="facts">${Tm.seq.map((id, i) => {
     const f = FACT[id]; const on = t.picked.includes(id); const [name, ...rest] = f.screen.split(' — ');
-    return `<button class="fact ${on ? 'on' : ''}" data-act="pick" data-k="${k}" data-id="${id}" ${locked ? 'disabled' : ''}><span class="n">${i + 1}</span><span><span class="ft">${esc(f.text)}</span><span class="os">On your wireframe screen: <b>${esc(name)}</b> — ${esc(rest.join(' — '))}</span></span></button>`;
+    return `<button class="fact ${on ? 'on' : ''}" data-act="pick" data-k="${k}" data-id="${id}" ${locked ? 'disabled' : ''}><span class="n">${i + 1}</span><span><span class="ft">${esc(f.text)}</span><span class="os">Wireframe instruction: <b>${esc(name)}</b> — ${esc(rest.join(' — '))}</span></span></button>`;
   }).join('')}</div>
    ${n ? `<h2 style="margin-top:20px">Why these facts matter</h2>${t.picked.map(id => `<div class="because"><b>Fact ${factNo(id)}.</b> ${esc(FACT[id].text)}<textarea data-bc="${k}|${id}" placeholder="This matters because…" ${locked ? 'disabled' : ''}>${esc(t.because[id] || '')}</textarea></div>`).join('')}
      <p><button class="btn pri" data-act="tab" data-k="${k}" data-tab="build">Build your wireframe screen →</button></p>` : ''}`;
@@ -361,7 +388,7 @@ function buildTab(k) {
     <div class="pal">${locked ? '<p class="small muted">Submitted — editing is closed.</p>' : COMP.map(([g, cs]) => `<div class="grp">${g}</div>${cs.map(c => `<button data-act="add" data-k="${k}" data-type="${c[0]}">${c[1]}</button>`).join('')}`).join('')}</div>
     <div>${phoneHTML(k, { edit: !locked, labels: ui.labels, sel: ui.sel })}<label class="small row" style="margin-top:8px;gap:6px"><input type="checkbox" data-act="labels" ${ui.labels ? 'checked' : ''}> Show Material 3 names</label></div>
     <div class="ins">
-     <div class="panel"><h3>Build list — from your facts</h3>
+     <div class="panel"><h3>Build list — one component per chosen fact</h3>
       ${items.length ? `<ul class="reqs">${items.map(i => `<li class="${i.ok ? 'ok' : ''}"><span><b>Fact ${factNo(i.id)}</b> · ${esc(i.label)}</span>${i.ok || locked ? '' : `<button class="btn sm" data-act="addfor" data-k="${k}" data-id="${i.id}">Add ${esc(CDEF[i.comp].name)}</button>`}</li>`).join('')}</ul>` : '<p class="small muted">Choose your facts first (step 3).</p>'}
       <h3 style="margin-top:12px">System rules</h3><ul class="reqs">${rules.map(r => `<li class="${r.ok ? 'ok' : ''}"><span>${esc(r.label)}</span></li>`).join('')}</ul>
       <p class="small muted" style="margin-top:6px">#NW-1042 here: ${esc(Tm.order)}</p></div>
@@ -395,7 +422,7 @@ function agendaTab() {
    <textarea class="inp" data-ag="opening" rows="4" ${pub ? 'disabled' : ''} placeholder="Why are we meeting, and what must we decide today?">${esc(a.opening)}</textarea>
    <p style="margin-top:12px">${pub ? `<span class="tag ok">Published at ${fmt(a.publishedAt)}</span> <button class="btn sm" data-act="ag-unpub">Edit again</button>` : `<button class="btn pri" data-act="ag-pub" ${can ? '' : 'disabled'}>Publish the agenda</button>`}</p>
    ${!pub && !can ? `<p class="small muted">${missing.length ? `Every team needs a slot (missing: ${missing.join(', ')}). ` : ''}${(a.opening || '').trim().length < 10 ? 'Write the opening statement.' : ''}</p>` : ''}</div>
-   <div class="panel"><h3>Chair’s running order</h3><ol class="steps"><li>Open with your statement.</li><li>Call each team in agenda order — 1 minute each. Present the Management dashboard last.</li><li><b>Connect the system:</b> ask each team what it needs and sends; record every connection on the class screen. Every wireframe screen must connect to another, and the dashboard must receive data from all five teams. Follow order #NW-1042 through all six wireframe screens.</li><li><b>The two questions:</b> ask the teams, then type the board’s answers.</li><li>Close with your feedback: what worked as one system, and what was missing.</li></ol></div></div>`;
+   <div class="panel"><h3>Chair’s running order</h3><ol class="steps"><li>Open with your statement.</li><li>Call each team in agenda order — 1 minute each. Present the Management dashboard last.</li><li><b>Connect the system:</b> ask the class which part of one wireframe screen passes what to another. On the class screen, click the component on one wireframe screen, then the component it connects to, and type the class’s label. Every department must be connected, and order #NW-1042 must be followed from A to D. Status reaches your dashboard automatically.</li><li><b>The two questions:</b> ask the teams, then type the board’s answers.</li><li>Close with your feedback: what worked as one system, and what was missing.</li></ol></div></div>`;
 }
 
 /* ---------------- class screen ---------------- */
@@ -428,52 +455,90 @@ function presentStage() {
    <div class="sbar"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(TEAMS[k].vc)}</div><h1>${esc(TEAMS[k].name)}</h1></div>
     <div class="row"><button class="btn" data-act="spotnav" data-d="-1" ${i <= 0 ? 'disabled' : ''}>← Previous</button><button class="btn pri" data-act="spotnav" data-d="1" ${i >= ord.length - 1 ? 'disabled' : ''}>Next team →</button></div></div>
    ${t.lockedAt ? '' : '<div class="banner warn">This team did not submit — showing its draft.</div>'}
-   <div class="spot"><div>${t.picked.map(id => `<div class="sfact" style="border-left-color:${col(k)}"><b>Fact ${factNo(id)}.</b> ${esc(FACT[id].text)}<div class="os">→ ${esc(FACT[id].screen.split(' — ')[0])}</div>${t.because[id] ? `<div class="bc">${esc(t.because[id])}</div>` : ''}</div>`).join('') || '<p class="muted">No facts chosen.</p>'}</div>
-    <div><p class="small muted" style="margin:0 0 6px">${esc(TEAMS[k].screen)}</p>${phoneHTML(k, { scale: .9 })}</div></div>`;
+   <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm ${b.showRef ? 'pri' : ''}" data-act="ref-toggle">${b.showRef ? 'Hide reference wireframe' : 'Show reference wireframe'}</button></div>
+   <div class="spot ${b.showRef ? 'withref' : ''}"><div>${t.picked.map(id => `<div class="sfact" style="border-left-color:${col(k)}"><b>Fact ${factNo(id)}.</b> ${esc(FACT[id].text)}<div class="os">→ ${esc(FACT[id].screen.split(' — ')[0])}</div>${t.because[id] ? `<div class="bc">${esc(t.because[id])}</div>` : ''}</div>`).join('') || '<p class="muted">No facts chosen.</p>'}
+     ${b.showRef ? compareHTML(k) : ''}</div>
+    <div><p class="small muted cap">Team ${k}’s wireframe screen</p>${phoneHTML(k, { scale: b.showRef ? .78 : .9 })}</div>
+    ${b.showRef ? `<div><p class="small muted cap">Reference wireframe screen</p>${refPhoneHTML(k, .78)}</div>` : ''}</div>`;
 }
+const MAPPOS = { A: [0, 0], B: [1, 0], C: [2, 0], E: [0, 1], F: [1, 1], D: [2, 1] };
+const mapEls = k => (T(k).wf || []).filter(e => e.type !== 'topappbar' && e.type !== 'navbar').sort((a, b) => a.y - b.y || a.x - b.x);
+const elTxt = e => { const s = (e.text || '').replace(/\*/g, '').split(',').map(x => x.trim()).filter(Boolean).join(' · '); return s.length > 46 ? s.slice(0, 44) + '…' : s; };
+const elName = (k, id) => { const e = (T(k).wf || []).find(x => x.id === id); return e ? `${CDEF[e.type].name}${elTxt(e) ? ' “' + elTxt(e) + '”' : ''}` : 'wireframe screen'; };
 function connChecks() {
   const c = B().connections || [];
   const linked = k => c.some(x => x.from === k || x.to === k);
-  const feeds = STUDENTS.map(k => [k, c.some(x => x.from === k && x.to === 'F')]);
+  const feeds = STUDENTS.map(k => [k, !!T(k).lockedAt || c.some(x => x.from === k && x.to === 'F')]);
   const order = TK.map(k => [k, /nw-?1042/i.test((T(k).wf || []).map(e => e.text || '').join(' '))]);
-  return { every: TK.map(k => [k, linked(k)]), feeds, order };
-}
-function mapSVG() {
-  const c = B().connections || []; const css = k => getComputedStyle(document.documentElement).getPropertyValue('--' + k).trim();
-  const N = { A: [110, 50], B: [590, 50], E: [110, 180], F: [400, 180], D: [110, 310], C: [590, 310] }; const hw = 78, hh = 22;
-  const edge = (p, q) => { const dx = q[0] - p[0], dy = q[1] - p[1]; const s = Math.min(dx ? hw / Math.abs(dx) : 1e9, dy ? hh / Math.abs(dy) : 1e9); return [p[0] + dx * s, p[1] + dy * s]; };
-  const groups = {}; c.forEach((x, i) => { const key = [x.from, x.to].sort().join(''); (groups[key] = groups[key] || []).push(i); });
-  const lines = c.map((x, i) => {
-    const p = N[x.from], q = N[x.to]; if (!p || !q || x.from === x.to) return '';
-    const key = [x.from, x.to].sort().join(''); const g = groups[key]; const idx = g.indexOf(i);
-    const [ax, ay] = N[key[0]], [bx, by] = N[key[1]]; const L = Math.hypot(bx - ax, by - ay); const nx = -(by - ay) / L, ny = (bx - ax) / L;
-    const off = (idx - (g.length - 1) / 2) * 26;
-    const s = edge(p, q), e = edge(q, p);
-    const x1 = s[0] + nx * off, y1 = s[1] + ny * off, x2 = e[0] + nx * off, y2 = e[1] + ny * off;
-    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
-    return `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${css(x.from)}" stroke-width="2.5" marker-end="url(#ar-${x.from})"/>` +
-      `<text x="${mx}" y="${my + 4}" font-size="12" text-anchor="middle" fill="#1D2230" paint-order="stroke" stroke="#fff" stroke-width="5">${esc((x.what || '').slice(0, 34))}</text>`;
-  }).join('');
-  const nodes = Object.entries(N).map(([k, [x, y]]) => `<rect x="${x - hw}" y="${y - hh}" width="${hw * 2}" height="${hh * 2}" rx="10" fill="#fff" stroke="${css(k)}" stroke-width="2.5"/><text x="${x}" y="${y + 5}" text-anchor="middle" font-size="14" font-weight="700" fill="${css(k)}">${k} · ${esc(NAV[k])}</text>`).join('');
-  const markers = TK.map(k => `<marker id="ar-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="${css(k)}"/></marker>`).join('');
-  return `<svg viewBox="0 0 700 360" class="map"><defs>${markers}</defs>${lines}${nodes}</svg>`;
+  const prev = { A: null }, q = ['A'];
+  while (q.length) { const n = q.shift(); c.filter(x => x.from === n && !(x.to in prev)).forEach(x => { prev[x.to] = n; q.push(x.to); }); }
+  let path = null; if ('D' in prev) { path = []; for (let n = 'D'; n; n = prev[n]) path.unshift(n); }
+  return { every: STUDENTS.map(k => [k, linked(k)]), feeds, order, path };
 }
 function checksHTML() {
   const ch = connChecks(); const m = (arr) => arr.map(([k, ok]) => `<span class="tag ${ok ? 'ok' : ''}">${k} ${ok ? '✓' : '—'}</span>`).join(' ');
-  return `<div class="checks"><div><b>Every wireframe screen connected</b><br>${m(ch.every)}</div><div><b>Dashboard receives data from</b><br>${m(ch.feeds)}</div><div><b>#NW-1042 on every wireframe screen</b><br>${m(ch.order)}</div></div>`;
+  return `<div class="checks"><div><b>Every department connected</b><br>${m(ch.every)}</div>
+   <div><b>#NW-1042 followed from A to D</b><br>${ch.path ? `<span class="tag ok">${ch.path.join(' → ')} ✓</span>` : '<span class="tag">not yet —</span>'}</div>
+   <div><b>Status reaches the dashboard (F)</b><br>${m(ch.feeds)}</div>
+   <div><b>#NW-1042 on every wireframe screen</b><br>${m(ch.order)}</div></div>`;
+}
+function connMapHTML(edit) {
+  const c = B().connections || []; const used = new Set(); c.forEach(x => { used.add(x.from + ':' + x.fromEl); used.add(x.to + ':' + x.toEl); });
+  const s = ui.csel, t = ui.cto;
+  const boxes = Object.entries(MAPPOS).map(([k, [cx, ry]]) => {
+    const els = mapEls(k);
+    return `<div class="mbox" data-mk="${k}" style="grid-column:${cx + 1};grid-row:${ry + 1};--c:${col(k)}"><div class="mh">${k} · ${esc(TEAMS[k].screenTitle)}</div>
+     ${els.map(e => { const id = k + ':' + e.id; const on = (s && s.k === k && s.id === e.id) || (t && t.k === k && t.id === e.id);
+       return `<div class="mc ${used.has(id) ? 'on' : ''} ${on ? 'sel' : ''}" data-mc="${id}" ${edit ? `data-act="cpick" data-k="${k}" data-el="${e.id}" role="button" tabindex="0"` : ''}><i>${esc(CDEF[e.type].name)}</i>${esc(elTxt(e)) || '<span class="muted">(no text)</span>'}</div>`; }).join('') || '<p class="small muted">No wireframe screen yet</p>'}</div>`;
+  }).join('');
+  const pills = c.map((x, i) => `<button class="mpill ${ui.cedit === i ? 'sel' : ''}" data-pi="${i}" ${edit ? `data-act="cedit" data-i="${i}" title="Click to edit or delete"` : 'tabindex="-1"'} style="--c:${col(x.from)}">${esc(x.what)}</button>`).join('');
+  return `<div class="cmap ${edit ? 'edit' : ''}" id="cmap"><svg class="cov"></svg><div class="cgrid">${boxes}</div>${pills}</div>
+   <div class="row small muted" style="margin-top:6px;gap:16px"><span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#555" stroke-width="2.5"/></svg> connection agreed by the board</span><span><svg width="34" height="10"><line x1="0" y1="5" x2="34" y2="5" stroke="#999" stroke-width="1.5" stroke-dasharray="5 4"/></svg> status sent to the Project dashboard (automatic once a team submits)</span></div>`;
+}
+function drawConnMap() {
+  const m = document.getElementById('cmap'); if (!m) return;
+  const svg = m.querySelector('.cov'); const R = m.getBoundingClientRect(); if (!R.width) return;
+  svg.setAttribute('width', R.width); svg.setAttribute('height', R.height); svg.setAttribute('viewBox', `0 0 ${R.width} ${R.height}`);
+  const rel = el => { const a = el.getBoundingClientRect(); return { x: a.left - R.left, y: a.top - R.top, w: a.width, h: a.height }; };
+  const boxOf = k => { const b = m.querySelector(`[data-mk="${k}"]`); return b && rel(b); };
+  const anc = (k, id, o) => {
+    const p = boxOf(k); if (!p) return null; const ce = id && m.querySelector(`[data-mc="${k}:${id}"]`); const c = ce ? rel(ce) : p;
+    const [ac, ar] = MAPPOS[k], [oc, or] = MAPPOS[o];
+    if (ar === or && ac !== oc) return oc > ac ? [p.x + p.w, c.y + c.h / 2, 1, 0] : [p.x, c.y + c.h / 2, -1, 0];
+    return or > ar ? [c.x + c.w / 2, p.y + p.h, 0, 1] : [c.x + c.w / 2, p.y, 0, -1];
+  };
+  const clip = (p, q) => { const cx = p.x + p.w / 2, cy = p.y + p.h / 2, dx = q.x + q.w / 2 - cx, dy = q.y + q.h / 2 - cy; const s = Math.min(dx ? p.w / 2 / Math.abs(dx) : 1e9, dy ? p.h / 2 / Math.abs(dy) : 1e9); return [cx + dx * s, cy + dy * s]; };
+  let h = `<defs>${TK.map(k => `<marker id="cm-${k}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" style="fill:${col(k)}"/></marker>`).join('')}<marker id="cm-st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#999"/></marker></defs>`;
+  const F = boxOf('F');
+  if (F) STUDENTS.forEach(k => { if (!T(k).lockedAt) return; const p = boxOf(k); if (!p) return; const a = clip(p, F), b = clip(F, p);
+    h += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#999" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#cm-st)"/>`; });
+  const placed = [];
+  (B().connections || []).forEach((x, i) => {
+    const s = anc(x.from, x.fromEl, x.to), t = anc(x.to, x.toEl, x.from); if (!s || !t || x.from === x.to) return;
+    const o = Math.max(40, Math.min(90, Math.hypot(t[0] - s[0], t[1] - s[1]) / 3));
+    const p1 = [s[0] + s[2] * o, s[1] + s[3] * o], p2 = [t[0] + t[2] * o, t[1] + t[3] * o];
+    h += `<path d="M${s[0]} ${s[1]} C${p1[0]} ${p1[1]} ${p2[0]} ${p2[1]} ${t[0]} ${t[1]}" fill="none" style="stroke:${col(x.from)}" stroke-width="${ui.cedit === i ? 4.5 : 2.5}" marker-end="url(#cm-${x.from})"/>`;
+    let mx = (s[0] + 3 * p1[0] + 3 * p2[0] + t[0]) / 8, my = (s[1] + 3 * p1[1] + 3 * p2[1] + t[1]) / 8;
+    for (let n = 0; n < 6 && placed.some(([px, py]) => Math.abs(px - mx) < 120 && Math.abs(py - my) < 24); n++) my += 26;
+    placed.push([mx, my]);
+    const pill = m.querySelector(`[data-pi="${i}"]`); if (pill) { pill.style.left = mx + 'px'; pill.style.top = my + 'px'; }
+  });
+  svg.innerHTML = h;
+}
+addEventListener('resize', () => drawConnMap());
+function connFormHTML() {
+  const c = B().connections || [];
+  if (ui.cedit != null && c[ui.cedit]) { const x = c[ui.cedit];
+    return `<div class="cform"><span><b>${x.from}</b> ${esc(elName(x.from, x.fromEl))} → <b>${x.to}</b> ${esc(elName(x.to, x.toEl))}</span>
+     <input class="inp" data-cl style="flex:1;min-width:220px" value="${esc(ui.clabel)}"><button class="btn pri" data-act="csave">Save label</button><button class="btn danger" data-act="cdel">Delete arrow</button><button class="btn" data-act="ccancel">Cancel</button></div>`; }
+  if (ui.csel && ui.cto) return `<div class="cform"><span><b>${ui.csel.k}</b> ${esc(elName(ui.csel.k, ui.csel.id))} → <b>${ui.cto.k}</b> ${esc(elName(ui.cto.k, ui.cto.id))}</span>
+     <input class="inp" data-cl style="flex:1;min-width:220px" placeholder="What passes between them? e.g. failed delivery status" value="${esc(ui.clabel)}"><button class="btn pri" data-act="cadd">Add arrow</button><button class="btn" data-act="ccancel">Cancel</button></div>`;
+  if (ui.csel) return `<div class="cform"><span><b>From ${ui.csel.k}:</b> ${esc(elName(ui.csel.k, ui.csel.id))}. Now click the component it connects to on another wireframe screen.</span><button class="btn" data-act="ccancel">Cancel</button></div>`;
+  return `<div class="cform muted">Click a component on one wireframe screen, then the component it connects to on another. Type what passes between them. Click a label to edit or delete it.</div>`;
 }
 function connectStage() {
-  const c = B().connections || []; const f = ui.conn;
-  return `<h1>Connect the system</h1><p class="muted">Follow order #NW-1042 through all six wireframe screens. For each link: which wireframe screen sends what to which wireframe screen?</p>
-   <div class="fivescreens">${TK.map(k => `<div><div class="teamchip small" style="color:${col(k)}">${k} · ${esc(NAV[k])}</div>${phoneHTML(k, { scale: .4, labels: false })}</div>`).join('')}</div>
-   <div class="grid2" style="margin-top:14px"><div class="panel">
-    <div class="row"><select class="inp" data-cf="from">${TK.map(k => `<option ${f.from === k ? 'selected' : ''}>${k}</option>`).join('')}</select> sends
-     <input class="inp" data-cf="what" style="flex:1;min-width:180px" placeholder="what? e.g. chosen pick-up point" value="${esc(f.what)}"> to
-     <select class="inp" data-cf="to">${TK.map(k => `<option ${f.to === k ? 'selected' : ''}>${k}</option>`).join('')}</select>
-     <button class="btn pri" data-act="conn-add">Add</button></div>
-    <ul class="conns">${c.map((x, i) => `<li><span class="dot" style="background:${col(x.from)}"></span><b>${x.from}</b> → <span class="dot" style="background:${col(x.to)}"></span><b>${x.to}</b>: ${esc(x.what)} <button class="btn sm danger" data-act="conn-rm" data-i="${i}">✕</button></li>`).join('') || '<li class="muted">No connections yet.</li>'}</ul>
-    ${checksHTML()}</div>
-   <div class="panel">${mapSVG()}</div></div>`;
+  return `<h1>Connect the system</h1><p class="muted">Follow order #NW-1042 through the six wireframe screens. For each link: which part of one wireframe screen passes what to which part of another?</p>
+   ${connMapHTML(true)}${connFormHTML()}<div class="panel" style="margin-top:12px">${checksHTML()}</div>`;
 }
 function questionsStage() {
   const a = B().answers || {};
@@ -481,8 +546,8 @@ function questionsStage() {
 }
 function summaryStage() {
   const a = B().answers || {};
-  return `<h1>What the board decided</h1><div class="grid2"><div class="panel">${mapSVG()}${checksHTML()}</div>
-   <div>${[1, 2].map(n => `<div class="panel" style="margin-bottom:14px"><h2>${n}. ${esc(DECISIONS[n].t)}</h2><p style="font-size:18px">${esc(a[n] || '—')}</p></div>`).join('')}</div></div>`;
+  return `<h1>What the board decided</h1><div class="grid2" style="margin-bottom:14px">${[1, 2].map(n => `<div class="panel"><h2>${n}. ${esc(DECISIONS[n].t)}</h2><p style="font-size:18px">${esc(a[n] || '—')}</p></div>`).join('')}</div>
+   <h2>The system</h2>${connMapHTML(false)}<div class="panel" style="margin-top:12px">${checksHTML()}</div>`;
 }
 
 /* ---------------- observer ---------------- */
@@ -499,8 +564,10 @@ function observerView() {
     <button class="btn sm" data-act="force" ${st === 'meeting' ? 'disabled' : ''}>Start meeting anyway</button>
     <span class="tag ${st === 'failed' ? 'bad' : st === 'meeting' || st === 'ready' ? 'ok' : ''}">State: ${st}</span>
     <span class="sep"></span><a class="btn sm" href="#board" target="_blank">Open class screen ↗</a></div>
-    ${st === 'meeting' ? `<div class="row" style="margin-top:8px"><b class="small">Class screen</b>${['present', 'connect', 'questions', 'summary'].map(s => `<button class="btn sm ${b.stage === s ? 'pri' : ''}" data-act="stage" data-s="${s}">${s}</button>`).join('')}${TK.map(k => `<button class="btn sm" data-act="spot" data-k="${k}">Spotlight ${k}</button>`).join('')}</div>` : ''}
-    <div class="row" style="margin-top:8px"><b class="small">Session</b><button class="btn sm danger" data-act="reset">Reset session</button>${MODE === 'test' ? '<button class="btn sm" data-act="demo">Fill with sample work (test mode)</button>' : ''}</div></div>
+    ${st === 'meeting' ? `<div class="row" style="margin-top:8px"><b class="small">Class screen</b>${['present', 'connect', 'questions', 'summary'].map(s => `<button class="btn sm ${b.stage === s ? 'pri' : ''}" data-act="stage" data-s="${s}">${s}</button>`).join('')}${TK.map(k => `<button class="btn sm" data-act="spot" data-k="${k}">Spotlight ${k}</button>`).join('')}<button class="btn sm ${b.showRef ? 'pri' : ''}" data-act="ref-toggle">${b.showRef ? 'Hide' : 'Show'} reference wireframe</button></div>` : ''}
+    <div class="row" style="margin-top:8px"><b class="small">Session</b><button class="btn sm danger" data-act="reset">Reset session</button></div>
+    <div class="row" style="margin-top:8px"><b class="small">Preview</b><button class="btn sm" data-act="solve">Solve everything and open the board meeting</button>
+     <span class="small muted">Fills every team’s check questions, facts and wireframe screen with the reference answers, publishes the agenda, adds sample connections and starts the meeting. Use a separate session code, not the one your class is using.</span></div></div>
    ${readyBar()}
    <table><thead><tr><th>Team</th><th>Status</th><th>Check questions</th><th>Facts chosen</th><th>Screen</th><th>Submitted</th></tr></thead><tbody>
    ${TK.map(k => {
@@ -564,18 +631,34 @@ app.addEventListener('click', e => {
     case 'start': if (boardState() === 'ready') setBoard({ meeting: { startedAt: Date.now(), forced: false }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
     case 'force': setBoard({ meeting: { startedAt: Date.now(), forced: true }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
     case 'stage': setBoard({ stage: b.dataset.s }); render(true); return;
+    case 'ref-toggle': setBoard({ showRef: !B().showRef }); render(true); return;
     case 'spot': setBoard({ spot: k, stage: 'present' }); render(true); return;
     case 'spotnav': { const o = agendaOrder(); const cur = o.includes(B().spot) ? B().spot : o[0]; const n = o[o.indexOf(cur) + +b.dataset.d]; if (n) setBoard({ spot: n }); render(true); return; }
-    case 'conn-add': { const f = ui.conn; if (!f.what.trim() || f.from === f.to) { toast(f.from === f.to ? 'Choose two different wireframe screens.' : 'Say what is sent.'); return; } setBoard({ connections: [...(B().connections || []), { from: f.from, to: f.to, what: f.what.trim() }] }); ui.conn.what = ''; render(true); return; }
-    case 'conn-rm': { const c = [...(B().connections || [])]; c.splice(+b.dataset.i, 1); setBoard({ connections: c }); render(true); return; }
+    case 'cpick': { const id = b.dataset.el; ui.cedit = null;
+      if (!ui.csel || ui.csel.k === k || ui.cto) { ui.csel = { k, id }; ui.cto = null; ui.clabel = ''; }
+      else ui.cto = { k, id };
+      render(true); if (ui.cto) app.querySelector('[data-cl]')?.focus(); return; }
+    case 'cadd': { const w = ui.clabel.trim(); if (!w) { toast('Type what passes between them first.'); app.querySelector('[data-cl]')?.focus(); return; }
+      setBoard({ connections: [...(B().connections || []), { from: ui.csel.k, fromEl: ui.csel.id, to: ui.cto.k, toEl: ui.cto.id, what: w }] });
+      ui.csel = ui.cto = null; ui.clabel = ''; render(true); return; }
+    case 'cedit': { const i = +b.dataset.i; ui.csel = ui.cto = null; ui.cedit = ui.cedit === i ? null : i; ui.clabel = ui.cedit == null ? '' : (B().connections || [])[i].what; render(true); if (ui.cedit != null) app.querySelector('[data-cl]')?.focus(); return; }
+    case 'csave': { const w = ui.clabel.trim(); if (!w) { toast('The label cannot be empty — delete the arrow instead.'); return; } const c = [...(B().connections || [])]; c[ui.cedit] = { ...c[ui.cedit], what: w }; setBoard({ connections: c }); ui.cedit = null; ui.clabel = ''; render(true); return; }
+    case 'cdel': { const c = [...(B().connections || [])]; c.splice(ui.cedit, 1); setBoard({ connections: c }); ui.cedit = null; ui.clabel = ''; render(true); return; }
+    case 'ccancel': ui.csel = ui.cto = ui.cedit = null; ui.clabel = ''; render(true); return;
     case 'override': setTeam(k, { override: true }); render(true); return;
     case 'clock-start': setBoard({ clock: Date.now(), failedAt: null, extension: 0 }); render(true); return;
     case 'clock-stop': setBoard({ clock: null, failedAt: null }); render(true); return;
     case 'extend': if (!B().extension) { setBoard({ extension: 5, failedAt: null }); toast('Extension granted: +5 minutes'); } render(true); return;
     case 'reset': if (resetArm()) { DB.reset(); ui.answers = {}; toast('Session reset'); } return;
     case 'demo': demo(); return;
+    case 'solve': if (solveArm()) { demo(true); setBoard({ meeting: { startedAt: Date.now(), forced: false }, stage: 'present', spot: 'A', showRef: false }); location.hash = 'board'; } return;
   }
 });
+let solveArmed = 0; function solveArm() {
+  const used = STUDENTS.some(k => { const t = T(k); return t.picked.length || (t.wf || []).length > 2 || t.lockedAt; });
+  if (!used || Date.now() - solveArmed < 4000) return true;
+  solveArmed = Date.now(); toast('Students have already worked in this session — click again within 4 seconds to overwrite their work.', 5000); return false;
+}
 let armed = 0; function resetArm() { if (Date.now() - armed < 4000) return true; armed = Date.now(); toast('Click “Reset session” again within 4 seconds to clear all work in this session.'); return false; }
 let saveT = {}; const later = (key, fn) => { clearTimeout(saveT[key]); saveT[key] = setTimeout(fn, 600); };
 app.addEventListener('input', e => {
@@ -584,17 +667,19 @@ app.addEventListener('input', e => {
   if (el.dataset.ans) { ui.answers[el.dataset.ans] = el.value; return; }
   if (el.dataset.ag) { later('ag', () => setTeam('F', { agenda: { opening: el.value } })); const p = app.querySelector('[data-act="ag-pub"]'); if (p) p.disabled = !(TK.every(k => T('F').agenda.order.includes(k)) && el.value.trim().length >= 10); return; }
   if (el.dataset.answer) { later('ans' + el.dataset.answer, () => setBoard({ answers: { [el.dataset.answer]: el.value } })); return; }
-  if (el.dataset.cf === 'what') { ui.conn.what = el.value; return; }
+  if ('cl' in el.dataset) { ui.clabel = el.value; return; }
 });
 app.addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.act === 'labels') { ui.labels = el.checked; render(true); return; }
-  if (el.dataset.cf) { ui.conn[el.dataset.cf] = el.value; return; }
   if (el.dataset.prop) { const k = curTeam(); const t = T(k); const wf = (t.wf || []).map(x => x.id === ui.sel ? { ...x, [el.dataset.prop]: el.value } : x); setTeam(k, { wf }); setTimeout(() => render(true), 0); return; }
 });
 app.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.dataset.ans) { const [k, q] = e.target.dataset.ans.split('-'); app.querySelector(`[data-act="check"][data-k="${k}"][data-q="${q}"]`)?.click(); return; }
   if (e.key === 'Enter' && e.target.id === 'code') { app.querySelector('[data-act="join"]').click(); return; }
+  if ('cl' in e.target.dataset && (e.key === 'Enter' || e.key === 'Escape')) { app.querySelector(e.key === 'Escape' ? '[data-act="ccancel"]' : '[data-act="cadd"],[data-act="csave"]')?.click(); return; }
+  if (e.key === 'Escape' && (ui.csel || ui.cedit != null)) { app.querySelector('[data-act="ccancel"]')?.click(); return; }
+  if (e.key === 'Enter' && e.target.dataset.act === 'cpick') { e.target.click(); return; }
   if (e.key === 'Enter' && e.target.id === 'pin') { app.querySelector('[data-act="pin"]').click(); return; }
   const k = curTeam(); if (!k || !ui.sel || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
   const t = T(k); if (t.lockedAt) return; const s = (t.wf || []).find(x => x.id === ui.sel); if (!s) return;
@@ -637,15 +722,8 @@ setInterval(() => {
 }, 1000);
 
 /* ---------------- sample data (test mode only) ---------------- */
-function demo() {
-  const W = {
-    A: [['card', 'Velvet cushion #NW-1042 · Aisle 14 · Bay 3', 16, 72, 'A3'], ['search', 'Scan or search item', 16, 184, 'A4'], ['chips', 'Collect in 2h,Home delivery', 16, 256, 'A1'], ['list', 'Suggested reorders (live sales)', 16, 304, 'A2']],
-    B: [['card', '#NW-1042 · Velvet cushion · Failed', 16, 72, ''], ['segmented', 'Home delivery,Pick-up point', 30, 184, 'B1'], ['list', 'Spar, Bold Street · 0.3 mi', 16, 240, 'B2'], ['switch', 'Text me when it arrives', 16, 416, 'B3'], ['card', 'Tracking: all 3 couriers in one place', 16, 456, 'B4']],
-    C: [['tabs', 'Orders,Deliveries,Messages', 0, 64, 'C4'], ['card', 'Jane Smith · #NW-1042 · Failed', 16, 120, ''], ['badge', 'At risk', 272, 128, 'C1'], ['list', 'Order · call · email · delivery', 16, 232, 'C2'], ['chips', 'AI reply drafted,Needs a person', 16, 408, 'C3']],
-    D: [['card', 'AI drafted 42 replies — review 3 flagged', 16, 72, 'D1'], ['dialog', 'Your decision: styling advice for #NW-1042', 30, 184, 'D4'], ['progress', 'Styling skills', 30, 384, 'D3'], ['button', 'Ask my mentor', 100, 416, 'D2']],
-    E: [['card', 'ERP fit: 40% of processes change', 16, 72, 'E1'], ['progress', 'Lock-in: 7 years', 30, 184, 'E2'], ['card', '#NW-1042 · one shared record', 16, 216, 'E3'], ['list', 'Connected: couriers, suppliers, payments', 16, 328, 'E4']],
-    F: [['card', 'Today: failed deliveries 18% incl. #NW-1042 · customers at risk · stock', 16, 72, 'F1'], ['card', 'Styling requests this week — no adviser yet', 16, 184, 'F2']]
-  };
+function demo(full = false) {
+  const W = {}; TK.forEach(k => W[k] = TEAMS[k].ref);
   TK.forEach(k => {
     const qset = ensureQset(k); const solved = {}; qset.forEach(i => solved[i] = true);
     const wf = [...frame(k), ...W[k].map((r, i) => { const d = CDEF[r[0]]; return { id: k + 'd' + i, type: r[0], text: r[1], x: r[2], y: r[3], w: d.w, h: d.h, fact: r[4] }; })];
@@ -653,7 +731,13 @@ function demo() {
     setTeam(k, { qset, solved, picked, because, wf, lockedAt: Date.now() });
   });
   setTeam('F', { agenda: { order: ['A', 'B', 'C', 'D', 'E', 'F'], opening: 'We are here to turn six wireframe screens into one Northway system, and then decide two questions.', publishedAt: Date.now() } });
-  toast('Sample work added for all six teams.');
+  if (full) setBoard({ connections: [
+    { from: 'A', fromEl: 'Ad0', to: 'B', toEl: 'Bd0', what: 'packed, ready to ship' },
+    { from: 'E', fromEl: 'Ed3', to: 'B', toEl: 'Bd4', what: 'courier tracking events' },
+    { from: 'B', fromEl: 'Bd0', to: 'C', toEl: 'Cd1', what: 'failed delivery status' },
+    { from: 'C', fromEl: 'Cd4', to: 'D', toEl: 'Dd1', what: 'query that needs a person' },
+    { from: 'A', fromEl: 'Ad3', to: 'E', toEl: 'Ed3', what: 'reorder sent to supplier' }] });
+  toast(full ? 'Everything solved — opening the board meeting.' : 'Sample work added for all six teams.');
 }
 
 /* ---------------- start ---------------- */

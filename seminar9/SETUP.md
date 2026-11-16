@@ -74,7 +74,7 @@ In the `dbmseminars` repository: **Add file → Upload files** → drag in the f
 - Class screen (projector): `…/seminar9/?s=CODE#board`
 - **Demo (minutes 0–10):** on the projector, open the start page and click **Tutor’s demo team** (Team F, Management). Do every step, then build and publish the agenda (★ Agenda tab). Use a fresh session code in class so Team F starts empty.
 - Observer view: `…/seminar9/?s=CODE#observer` → **Start the 60-minute clock** at the end of the demo, when students start reading.
-- Board meeting (minutes 70–90): you chair as Management from the class screen.
+- Board meeting (minutes 70–90): you chair as Management from the class screen. In **Connect the system** you draw the arrows the class suggests: click a component on one wireframe screen, then the component it connects to, and type the label. Click a label to edit or delete it.
 - Observer controls: unlock a stuck team’s facts · **+5 minutes** (once) · **Start meeting anyway** · move the class screen between stages · reset.
 
 Without a Firebase config the page runs in **test mode**: everything works, but only between tabs of one browser. Use it to try things out (observer view → “Fill with sample work”).
