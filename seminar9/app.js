@@ -1,6 +1,6 @@
 /* Seminar 9 · Northway Home board meeting — application
    Data: Firebase Firestore (when config.js has a firebase config) or this browser only (test mode). */
-const APP_VERSION = 'S9-1116-0915';
+const APP_VERSION = 'S9-1116-1015';
 if (!window.CONTENT || window.CONTENT.VERSION !== APP_VERSION || !window.CONTENT.TEAMS.F) {
   document.getElementById('app').innerHTML = `<div class="wrap narrow"><div class="panel" style="border:2px solid #A8322A"><h2>The site files are out of step</h2>
     <p>This page needs <b>index.html</b>, <b>app.js</b> and <b>content.js</b> from the same update (version <b>${APP_VERSION}</b>), but content.js is version <b>${(window.CONTENT && window.CONTENT.VERSION) || 'unknown (older)'}</b>.</p>
@@ -366,7 +366,8 @@ function checkTab(k) {
 function factsTab(k) {
   const Tm = TEAMS[k], t = T(k), locked = !!t.lockedAt, n = t.picked.length;
   return `<div class="panel explain"><h3>What the facts are for</h3>
-    <p>Each fact describes <b>how Northway works today</b> in your area (${esc(Tm.short.toLowerCase())}). Your job is to translate the right facts into a <b>functional wireframe screen for Northway’s new integrated ERP system</b> — the screen your department will use.</p>
+    <p>Northway is replacing its separate systems with <b>one integrated ERP system</b> that all departments share: one company, one database. Each department designs the wireframe screen its own staff will use, and the facts below describe <b>how Northway works today</b> in your area. By choosing the right facts and turning each one into a component, your team decides what the new system must do for your department. At the board meeting your screen must connect with the other five, so that one order, <b>#NW-1042</b>, can be followed from the warehouse to the customer.</p>
+    <p>Your task: translate the right facts into the wireframe screen your department (${esc(Tm.short.toLowerCase())}) will use.</p>
     <p>Every fact comes with a <b>wireframe instruction</b>: the Material 3 component to add and exactly what it must show. Choose the ${pickTxt(k)} facts whose component helps the person using your screen: <i>${esc(Tm.test)}</i>
     Leave facts that add nothing — and the one that draws a <b>wrong lesson from the case</b>.</p>
     <p class="small">Keep the case you read in mind: it shows how another company solved similar problems. It is an example, not your company.</p>
@@ -435,7 +436,7 @@ function boardView() {
       const miss = p.filter(x => !x.ok).map(x => x.k === 'agenda' ? 'the agenda' : `${TEAMS[x.k].short} (Team ${x.k})`);
       head = `<div class="fail"><h1>Board meeting cancelled — the project failed.</h1><p>Northway’s new system cannot work without: <b>${esc(miss.join(', '))}</b>.</p></div>`;
     } else if (st === 'ready') head = `<div class="readyok"><h1>All departments ready.</h1><p>The chair can start the board meeting.</p><button class="btn pri big" data-act="start">Start board meeting</button></div>`;
-    return `<div class="wrap screen"><div class="sbar"><h1>Northway Home · board meeting</h1>${countHTML(true)}</div>${head}${readyBar(true)}
+    return `<div class="wrap screen"><div class="sbar"><h1>Northway Home · board meeting</h1>${countHTML(true)}</div><div class="intro">Northway Home is a UK online homeware retailer with 400 staff, one warehouse and three courier firms, but its systems don’t talk to each other: 18% of first deliveries fail and customers are leaving. Today each of six departments designs one wireframe screen of Northway’s new integrated ERP system, and after 60 minutes the board meets to check that the six screens work as one system and to answer two questions: should Northway fit the software or redesign itself, and what happens to junior employees?</div>${head}${readyBar(true)}
      ${vcHTML({ size: 'big', bad: st === 'failed' ? badTeams : [], fill: k => { const [s, c] = teamStatus(k); const m = missingOf(k); return `<span class="tag ${c}">${s}</span>${m && m !== 'not submitted' ? `<div class="small missing">missing: ${esc(m)}</div>` : ''}`; } })}
      ${st === 'waiting' ? `<p class="center muted" style="margin-top:16px">The board meeting can start only when all ${parts().length} parts are ready.${b.clock ? '' : ' (Clock not started.)'}</p>` : ''}</div>`;
   }
