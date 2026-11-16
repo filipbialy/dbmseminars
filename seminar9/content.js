@@ -20,6 +20,7 @@ window.CONTENT = (function () {
     A: {
       name: 'Inbound Logistics & Procurement', short: 'Inbound logistics', vc: 'Primary activity',
       role: 'You run everything that comes INTO Northway: ordering from suppliers, receiving goods and keeping the warehouse stocked.',
+      user: ['Warehouse clerk', 'checks stock, finds and packs each order, approves reorders'],
       screenTitle: 'Stock & reorder', screen: 'The warehouse “stock & reorder” screen, used by warehouse staff.',
       test: 'Does it help warehouse staff keep the right stock in the right place?',
       order: 'The velvet cushion for #NW-1042 is in stock — and where it is.',
@@ -54,6 +55,7 @@ window.CONTENT = (function () {
     B: {
       name: 'Outbound Logistics', short: 'Outbound logistics', vc: 'Primary activity',
       role: 'You run everything that goes OUT of Northway: couriers, deliveries and the “last mile” to the customer’s door.',
+      user: ['Delivery coordinator', 'sends every parcel out and rebooks failed deliveries'],
       screenTitle: 'Delivery desk', screen: 'The delivery coordinator’s screen: rebook failed deliveries and choose pick-up points.',
       test: 'Does it help the delivery coordinator get every parcel to the customer?',
       order: 'The coordinator rebooks #NW-1042 to a pick-up point (Spar, Bold Street) after the delivery failed.',
@@ -88,6 +90,7 @@ window.CONTENT = (function () {
     C: {
       name: 'Sales, Marketing & Service', short: 'Sales, marketing & service', vc: 'Primary activity',
       role: 'You run everything to do with the customer: selling, marketing, the call centre and after-sales service.',
+      user: ['Customer-service agent', 'sees everything about one customer and answers them'],
       screenTitle: 'Customer view', screen: 'A customer-service agent’s “single view of the customer” screen.',
       test: 'Does it help the agent understand and help this customer?',
       order: 'The agent sees Jane Smith’s whole story: order, failed delivery, messages.',
@@ -122,6 +125,7 @@ window.CONTENT = (function () {
     D: {
       name: 'Human Resources', short: 'Human resources', vc: 'Support activity',
       role: 'You are responsible for Northway’s people: hiring, training and careers — including the 30 graduates planned for next year.',
+      user: ['Graduate employee (first year)', 'checks the AI’s work, makes decisions, learns the job'],
       screenTitle: 'My work today', screen: 'A graduate employee’s work screen: what the AI does, what the person decides, what they are learning.',
       test: 'Does it help the graduate do meaningful work and keep learning?',
       order: 'The graduate’s task: Jane Smith (#NW-1042) has asked for styling advice.',
@@ -156,6 +160,7 @@ window.CONTENT = (function () {
     E: {
       name: 'Technology', short: 'Technology', vc: 'Support activity',
       role: 'You are Northway’s IT department. You decide which systems Northway buys or builds, and how they connect into one database.',
+      user: ['IT manager', 'sees how Northway’s systems connect and decides on the ERP'],
       screenTitle: 'Systems', screen: 'The IT team’s “systems & integration” screen: how Northway’s systems connect, and the ERP decision.',
       test: 'Does it help the IT team see how Northway’s systems fit together, and decide what to buy or build?',
       order: '#NW-1042 shown as one shared record that every department’s system reads.',
@@ -191,6 +196,7 @@ window.CONTENT = (function () {
       demo: true, draw: [0, 2], pick: [2, 2],  // demo: 6 facts, 2 correct
       name: 'Administration & Management', short: 'Management', vc: 'Support activity · your tutor’s demo team',
       role: 'The managers. Your tutor uses this team at the start to show every step — and then chairs the board meeting as Management.',
+      user: ['Managers (the board)', 'see every department’s progress and the decisions waiting'],
       screenTitle: 'Project', screen: 'The managers’ project dashboard: how every department’s work is going, and the decisions waiting for the board.',
       test: 'Does it help the managers see how every team’s work is going, and what they must decide?',
       order: '#NW-1042 used as the test case: has it passed through every department’s screen?',
@@ -212,5 +218,5 @@ window.CONTENT = (function () {
       ]
     }
   };
-  return { VERSION: 'S9-1116-1015', DECISIONS, NAV, STATUS, TEAMS };
+  return { VERSION: 'S9-1116-1045', DECISIONS, NAV, STATUS, TEAMS };
 })();

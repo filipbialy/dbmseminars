@@ -1,6 +1,6 @@
 /* Seminar 9 · Northway Home board meeting — application
    Data: Firebase Firestore (when config.js has a firebase config) or this browser only (test mode). */
-const APP_VERSION = 'S9-1116-1015';
+const APP_VERSION = 'S9-1116-1045';
 if (!window.CONTENT || window.CONTENT.VERSION !== APP_VERSION || !window.CONTENT.TEAMS.F) {
   document.getElementById('app').innerHTML = `<div class="wrap narrow"><div class="panel" style="border:2px solid #A8322A"><h2>The site files are out of step</h2>
     <p>This page needs <b>index.html</b>, <b>app.js</b> and <b>content.js</b> from the same update (version <b>${APP_VERSION}</b>), but content.js is version <b>${(window.CONTENT && window.CONTENT.VERSION) || 'unknown (older)'}</b>.</p>
@@ -45,6 +45,15 @@ TK.forEach((k, ti) => {
   for (let i = 0; i < ids.length; i++) seq.push(slots.includes(i) ? g.shift() : o.shift());
   TEAMS[k].seq = seq;
 });
+function endFix() { const f = ui.fixK; if (!f) return; if (JSON.stringify([T(f).wf, T(f).picked]) !== ui.fixSnap) setTeam(f, { corrected: Date.now() }); ui.fixK = null; ui.sel = null; }
+function newEl(wf, type, text, fact) {
+  const d = CDEF[type]; const others = wf.filter(el => el.type !== 'navbar'); const bottom = others.reduce((m, el) => Math.max(m, el.y + el.h), 0);
+  let y = null; for (let yy = 72; yy + d.h <= 560; yy += 8) if (!others.some(o => yy < o.y + o.h + 8 && yy + d.h + 8 > o.y)) { y = yy; break; }
+  if (y === null) y = Math.max(0, Math.min(568 - d.h, bottom + 8));
+  const el = { id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), type, x: Math.max(0, snap((360 - d.w) / 2)), y, w: d.w, h: d.h, text, fact };
+  if (type === 'navbar') el.y = 640 - d.h; return el;
+}
+const usedBy = (k, cls = '') => `<div class="usedby ${cls}" style="--c:${col(k)}"><b>Used by:</b> ${esc(TEAMS[k].user[0])} — ${esc(TEAMS[k].user[1])}</div>`;
 const factNo = id => TEAMS[FACT[id].team].seq.indexOf(id) + 1;
 
 /* ---------------- state ---------------- */
@@ -231,7 +240,24 @@ function refPhoneHTML(k, scale = 1) {
   const els = refEls(k).map(e => `<div class="el" style="left:${e.x}px;top:${e.y}px;width:${e.w}px;height:${e.h}px">${comp(e)}<span class="lbl ${e.fact ? 'f' : ''} ${e.y < 16 ? 'in' : ''}">${esc(CDEF[e.type].name)}${e.fact ? ' · fact ' + factNo(e.fact) : ''}</span></div>`).join('');
   return `<div class="phone-out" style="width:${360 * scale + 4}px;height:${640 * scale + 4}px"><div class="phone view ref" style="transform:scale(${scale})">${els}</div></div>`;
 }
-function compareHTML(k) {
+function fixHTML(k) {
+  const t = T(k), wf = t.wf || [], sel = wf.find(e => e.id === ui.sel);
+  const facts = [...TEAMS[k].facts].sort((a, b) => factNo(a.id) - factNo(b.id));
+  const onScreen = id => wf.some(e => e.fact === id);
+  return `<div class="banner fixbar"><span><b>Correcting Team ${k}’s wireframe screen.</b> Every change is saved and shown on this screen. Choose the right facts, add their components, remove wrong ones, then move on.</span><button class="btn pri" data-act="fix-done">Done correcting</button></div>
+   <div class="fixgrid">
+    <div class="panel"><h3>Team ${k}’s facts</h3><p class="small muted">✓ = chosen by the team (or by you). Click to choose or unchoose.</p>
+     ${facts.map(f => { const p = t.picked.includes(f.id); return `<div class="ffix ${p ? 'on' : ''}"><button class="fchk" data-act="fix-pick" data-k="${k}" data-id="${f.id}" aria-label="Choose fact ${factNo(f.id)}">${p ? '✓' : ''}</button><div><b>${factNo(f.id)}.</b> ${esc(f.text)}<div class="small muted">→ ${esc(f.screen.split(' — ')[0])}</div>${p && !onScreen(f.id) ? `<button class="btn sm" data-act="fix-add" data-k="${k}" data-id="${f.id}">Add ${esc(f.screen.split(' — ')[0])}</button>` : ''}</div></div>`; }).join('')}</div>
+    <div><p class="small muted cap">Team ${k}’s wireframe screen — drag to move</p>${phoneHTML(k, { edit: true, labels: true, sel: ui.sel, scale: .85 })}
+     <div class="row" style="margin-top:8px"><select class="inp" id="fixtype">${COMP.map(([g, cs]) => `<optgroup label="${esc(g)}">${cs.map(c => `<option value="${c[0]}">${esc(c[1])}</option>`).join('')}</optgroup>`).join('')}</select><button class="btn sm" data-act="fix-addtype" data-k="${k}">Add component</button></div>
+     ${sel && !/topappbar|navbar/.test(sel.type) ? `<div class="panel ins" style="margin-top:8px"><h3>${esc(CDEF[sel.type].name)}</h3>
+      <label>Text on the component<input class="inp" data-prop="text" value="${esc(sel.text || '')}"></label>
+      <label>Which fact does it show?<select class="inp" data-prop="fact"><option value="">— none —</option>${t.picked.map(id => `<option value="${id}" ${sel.fact === id ? 'selected' : ''}>Fact ${factNo(id)}: ${esc(FACT[id].text.slice(0, 50))}…</option>`).join('')}</select></label>
+      <div class="row"><button class="btn sm danger" data-act="fix-rm" data-k="${k}" data-el="${sel.id}">Delete component</button></div></div>` : '<p class="small muted" style="margin-top:8px">Click a component to change its text or fact.</p>'}</div>
+    <div><p class="small muted cap">Reference wireframe screen</p>${refPhoneHTML(k, .6)}${compareHTML(k, true)}</div>
+   </div>`;
+}
+function compareHTML(k, fix = false) {
   const t = T(k), wf = t.wf || [];
   const shown = new Set(wf.filter(e => e.fact && FACT[e.fact] && FACT[e.fact].comp.includes(e.type)).map(e => e.fact));
   const keys = TEAMS[k].facts.filter(f => f.kind === 'key');
@@ -240,9 +266,9 @@ function compareHTML(k) {
   const extra = wf.filter(e => e.fact && FACT[e.fact] && FACT[e.fact].kind !== 'key');
   const noOrder = !/nw-?1042/i.test(wf.map(e => e.text || '').join(' '));
   const items = [
-    ...missing.map(f => `<li class="miss">Missing: <b>${esc(f.screen.split(' — ')[0])}</b> — ${esc(f.screen.split(' — ').slice(1).join(' — '))}</li>`),
-    ...extra.map(e => `<li class="diff">Different: <b>${esc(CDEF[e.type].name)}</b> comes from ${KL[FACT[e.fact].kind]} (fact ${factNo(e.fact)})</li>`),
-    ...(noOrder ? ['<li class="miss">Missing: order <b>#NW-1042</b> on the screen</li>'] : [])];
+    ...missing.map(f => `<li class="miss">Missing: <b>${esc(f.screen.split(' — ')[0])}</b> — ${esc(f.screen.split(' — ').slice(1).join(' — '))}${fix ? ` <button class="btn sm pri" data-act="fix-add" data-k="${k}" data-id="${f.id}">Add it</button>` : ''}</li>`),
+    ...extra.map(e => `<li class="diff">Different: <b>${esc(CDEF[e.type].name)}</b> comes from ${KL[FACT[e.fact].kind]} (fact ${factNo(e.fact)})${fix ? ` <button class="btn sm danger" data-act="fix-rm" data-k="${k}" data-el="${e.id}">Remove it</button>` : ''}</li>`),
+    ...(noOrder ? [`<li class="miss">Missing: order <b>#NW-1042</b> on the screen${fix ? ' — select a component and type it into its text' : ''}</li>`] : [])];
   return `<div class="cmp"><h3>Compared with the reference</h3>${items.length ? `<ul>${items.join('')}</ul>` : '<p class="okline">✓ Every reference component is there.</p>'}</div>`;
 }
 function frame(k) {
@@ -267,7 +293,7 @@ function readyBar(big = false) {
 }
 
 /* ---------------- routing & rendering ---------------- */
-let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: localStorage.getItem('nw9tutor') === '1', lastState: null, csel: null, cto: null, cedit: null, clabel: '' };
+let ui = { tab: {}, sel: null, answers: {}, labels: true, pinOk: localStorage.getItem('nw9tutor') === '1', lastState: null, csel: null, cto: null, cedit: null, clabel: '', fixK: null, fixSnap: '' };
 function route() { const h = location.hash.replace('#', ''); if (h.startsWith('team/')) return { v: 'team', k: h.slice(5) }; if (h === 'board') return { v: 'board' }; if (h === 'observer') return { v: 'observer' }; return { v: 'home' }; }
 addEventListener('hashchange', () => { ui.sel = null; render(true); });
 let pending = false;
@@ -282,7 +308,7 @@ function render(force = false) {
   const tl = `<span class="menu"><a href="#">Teams</a><a href="#board">Class screen</a><a href="#observer">Observer</a><a href="#" data-bar="leave">Change session</a></span>`;
   document.getElementById('bar').innerHTML = `<span><b>Northway Home</b> · Seminar 9</span>${tl}<span>Session <b>${esc(SESSION)}</b>${MODE === 'test' ? ' · <span class="testtag">TEST MODE — this browser only</span>' : ''} · <span style="opacity:.6">${APP_VERSION}</span></span>`;
   if (r.v === 'team' && TEAMS[r.k]) { app.innerHTML = teamView(r.k); bindPhone(r.k); }
-  else if (r.v === 'board') app.innerHTML = boardView();
+  else if (r.v === 'board') { app.innerHTML = boardView(); if (ui.fixK && ui.pinOk) bindPhone(ui.fixK); }
   else if (r.v === 'observer') app.innerHTML = ui.pinOk ? observerView() : pinView();
   else app.innerHTML = homeView();
   requestAnimationFrame(drawConnMap);
@@ -316,7 +342,7 @@ function teamView(k) {
   else body = submitTab(k);
   const ph = phaseNow();
   return `<div class="wrap">
-   <div class="thead"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(Tm.vc)}</div><h1>${esc(Tm.name)}</h1></div>
+   <div class="thead"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(Tm.vc)}</div><h1>${esc(Tm.name)}</h1>${usedBy(k)}</div>
     <div class="phase">${ph ? `Suggested now: <b>${esc(ph)}</b>` : ''}</div></div>
    ${readyBar()}
    ${t.lockedAt ? `<div class="banner ok">✓ Submitted at ${fmt(t.lockedAt)}. Your wireframe screen is ready for the board meeting.</div>` : ''}
@@ -367,7 +393,7 @@ function factsTab(k) {
   const Tm = TEAMS[k], t = T(k), locked = !!t.lockedAt, n = t.picked.length;
   return `<div class="panel explain"><h3>What the facts are for</h3>
     <p>Northway is replacing its separate systems with <b>one integrated ERP system</b> that all departments share: one company, one database. Each department designs the wireframe screen its own staff will use, and the facts below describe <b>how Northway works today</b> in your area. By choosing the right facts and turning each one into a component, your team decides what the new system must do for your department. At the board meeting your screen must connect with the other five, so that one order, <b>#NW-1042</b>, can be followed from the warehouse to the customer.</p>
-    <p>Your task: translate the right facts into the wireframe screen your department (${esc(Tm.short.toLowerCase())}) will use.</p>
+    <p>Your task: translate the right facts into the wireframe screen your department (${esc(Tm.short.toLowerCase())}) will use — the screen of the <b>${esc(Tm.user[0].toLowerCase())}</b>, who ${esc(Tm.user[1])}.</p>
     <p>Every fact comes with a <b>wireframe instruction</b>: the Material 3 component to add and exactly what it must show. Choose the ${pickTxt(k)} facts whose component helps the person using your screen: <i>${esc(Tm.test)}</i>
     Leave facts that add nothing — and the one that draws a <b>wrong lesson from the case</b>.</p>
     <p class="small">Keep the case you read in mind: it shows how another company solved similar problems. It is an example, not your company.</p>
@@ -384,7 +410,7 @@ function buildTab(k) {
   const Tm = TEAMS[k], t = T(k), locked = !!t.lockedAt;
   if (!t.wf || !t.wf.length) { setTeam(k, { wf: frame(k) }); }
   const wf = T(k).wf || []; const sel = wf.find(e => e.id === ui.sel); const { items, rules } = buildItems(k);
-  return `<p><b>Build:</b> ${esc(Tm.screen)}</p>
+  return `<p><b>Build:</b> ${esc(Tm.screen)} The person using it: <b>${esc(Tm.user[0].toLowerCase())}</b>.</p>
    <div class="wfb">
     <div class="pal">${locked ? '<p class="small muted">Submitted — editing is closed.</p>' : COMP.map(([g, cs]) => `<div class="grp">${g}</div>${cs.map(c => `<button data-act="add" data-k="${k}" data-type="${c[0]}">${c[1]}</button>`).join('')}`).join('')}</div>
     <div>${phoneHTML(k, { edit: !locked, labels: ui.labels, sel: ui.sel })}<label class="small row" style="margin-top:8px;gap:6px"><input type="checkbox" data-act="labels" ${ui.labels ? 'checked' : ''}> Show Material 3 names</label></div>
@@ -453,14 +479,14 @@ function presentStage() {
   const ord = agendaOrder(); const b = B(); const k = ord.includes(b.spot) ? b.spot : ord[0]; const i = ord.indexOf(k); const t = T(k); const a = T('F').agenda;
   return `${a.opening ? `<div class="panel" style="margin-bottom:12px"><b>Chair’s opening:</b> ${esc(a.opening)}</div>` : ''}
    <div class="row" style="margin-bottom:12px">${ord.map((x, j) => `<button class="btn sm ${x === k ? 'pri' : ''}" data-act="spot" data-k="${x}">${j + 1}. Team ${x}</button>`).join('')}</div>
-   <div class="sbar"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(TEAMS[k].vc)}</div><h1>${esc(TEAMS[k].name)}</h1></div>
+   <div class="sbar"><div><div class="teamchip" style="color:${col(k)}"><span class="dot" style="background:${col(k)}"></span>Team ${k} · ${esc(TEAMS[k].vc)}</div><h1>${esc(TEAMS[k].name)}</h1>${usedBy(k, 'big')}</div>
     <div class="row"><button class="btn" data-act="spotnav" data-d="-1" ${i <= 0 ? 'disabled' : ''}>← Previous</button><button class="btn pri" data-act="spotnav" data-d="1" ${i >= ord.length - 1 ? 'disabled' : ''}>Next team →</button></div></div>
    ${t.lockedAt ? '' : '<div class="banner warn">This team did not submit — showing its draft.</div>'}
-   <div class="row" style="justify-content:flex-end;margin-bottom:8px"><button class="btn sm ${b.showRef ? 'pri' : ''}" data-act="ref-toggle">${b.showRef ? 'Hide reference wireframe' : 'Show reference wireframe'}</button></div>
+   ${ui.pinOk && ui.fixK === k ? fixHTML(k) : `<div class="row" style="justify-content:flex-end;margin-bottom:8px">${t.corrected ? '<span class="tag warn">Corrected by the chair</span>' : ''}${ui.pinOk ? `<button class="btn sm" data-act="fix-start" data-k="${k}">✎ Correct this wireframe</button>` : ''}<button class="btn sm ${b.showRef ? 'pri' : ''}" data-act="ref-toggle">${b.showRef ? 'Hide reference wireframe' : 'Show reference wireframe'}</button></div>
    <div class="spot ${b.showRef ? 'withref' : ''}"><div>${t.picked.map(id => `<div class="sfact" style="border-left-color:${col(k)}"><b>Fact ${factNo(id)}.</b> ${esc(FACT[id].text)}<div class="os">→ ${esc(FACT[id].screen.split(' — ')[0])}</div>${t.because[id] ? `<div class="bc">${esc(t.because[id])}</div>` : ''}</div>`).join('') || '<p class="muted">No facts chosen.</p>'}
      ${b.showRef ? compareHTML(k) : ''}</div>
     <div><p class="small muted cap">Team ${k}’s wireframe screen</p>${phoneHTML(k, { scale: b.showRef ? .78 : .9 })}</div>
-    ${b.showRef ? `<div><p class="small muted cap">Reference wireframe screen</p>${refPhoneHTML(k, .78)}</div>` : ''}</div>`;
+    ${b.showRef ? `<div><p class="small muted cap">Reference wireframe screen</p>${refPhoneHTML(k, .78)}</div>` : ''}</div>`}`;
 }
 const MAPPOS = { A: [0, 0], B: [1, 0], C: [2, 0], E: [0, 1], F: [1, 1], D: [2, 1] };
 const mapEls = k => (T(k).wf || []).filter(e => e.type !== 'topappbar' && e.type !== 'navbar').sort((a, b) => a.y - b.y || a.x - b.x);
@@ -488,7 +514,7 @@ function connMapHTML(edit) {
   const s = ui.csel, t = ui.cto;
   const boxes = Object.entries(MAPPOS).map(([k, [cx, ry]]) => {
     const els = mapEls(k);
-    return `<div class="mbox" data-mk="${k}" style="grid-column:${cx + 1};grid-row:${ry + 1};--c:${col(k)}"><div class="mh">${k} · ${esc(TEAMS[k].screenTitle)}</div>
+    return `<div class="mbox" data-mk="${k}" style="grid-column:${cx + 1};grid-row:${ry + 1};--c:${col(k)}"><div class="mh">${k} · ${esc(TEAMS[k].screenTitle)}</div><div class="mu">Used by: ${esc(TEAMS[k].user[0])}</div>
      ${els.map(e => { const id = k + ':' + e.id; const on = (s && s.k === k && s.id === e.id) || (t && t.k === k && t.id === e.id);
        return `<div class="mc ${used.has(id) ? 'on' : ''} ${on ? 'sel' : ''}" data-mc="${id}" ${edit ? `data-act="cpick" data-k="${k}" data-el="${e.id}" role="button" tabindex="0"` : ''}><i>${esc(CDEF[e.type].name)}</i>${esc(elTxt(e)) || '<span class="muted">(no text)</span>'}</div>`; }).join('') || '<p class="small muted">No wireframe screen yet</p>'}</div>`;
   }).join('');
@@ -613,14 +639,23 @@ app.addEventListener('click', e => {
       setTeam(k, p); render(true); return;
     }
     case 'add': case 'addfor': {
-      const type = a === 'add' ? b.dataset.type : FACT[b.dataset.id].comp[0]; const d = CDEF[type];
-      const wf = [...(t.wf || frame(k))];
-      const bottom = wf.filter(el => el.type !== 'navbar').reduce((m, el) => Math.max(m, el.y + el.h), 0);
-      const el = { id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), type, x: Math.max(0, snap((360 - d.w) / 2)), y: Math.min(568 - d.h, bottom + 8), w: d.w, h: d.h, text: '', fact: a === 'addfor' ? b.dataset.id : '' };
-      if (type === 'navbar') el.y = 640 - d.h;
-      if (el.y < 0) el.y = 0;
+      const type = a === 'add' ? b.dataset.type : FACT[b.dataset.id].comp[0];
+      const wf = [...(t.wf || frame(k))]; const el = newEl(wf, type, '', a === 'addfor' ? b.dataset.id : '');
       wf.push(el); ui.sel = el.id; setTeam(k, { wf }); render(true); return;
     }
+    case 'fix-start': ui.fixK = k; ui.sel = null; ui.fixSnap = JSON.stringify([t.wf, t.picked]); render(true); return;
+    case 'fix-done': endFix(); render(true); return;
+    case 'fix-pick': { const id = b.dataset.id; let picked = [...t.picked]; const wf = t.wf || [];
+      if (picked.includes(id)) { picked = picked.filter(x => x !== id); setTeam(k, { picked, wf: wf.map(el => el.fact === id ? { ...el, fact: '' } : el) }); }
+      else setTeam(k, { picked: [...picked, id] });
+      render(true); return; }
+    case 'fix-add': { const id = b.dataset.id; const r = (TEAMS[k].ref || []).find(x => x[4] === id);
+      const wf = [...(t.wf || frame(k))]; const el = newEl(wf, r ? r[0] : FACT[id].comp[0], r ? r[1] : '', id);
+      wf.push(el); ui.sel = el.id; setTeam(k, { wf, picked: t.picked.includes(id) ? t.picked : [...t.picked, id] }); render(true); return; }
+    case 'fix-addtype': { const type = document.getElementById('fixtype').value; const wf = [...(t.wf || frame(k))]; const el = newEl(wf, type, '', ''); wf.push(el); ui.sel = el.id; setTeam(k, { wf }); render(true); return; }
+    case 'fix-rm': { const id = b.dataset.el; const gone = (t.wf || []).find(x => x.id === id); const wf = (t.wf || []).filter(x => x.id !== id); const p = { wf };
+      if (gone && gone.fact && !wf.some(x => x.fact === gone.fact) && FACT[gone.fact].kind !== 'key') p.picked = t.picked.filter(x => x !== gone.fact);
+      if (ui.sel === id) ui.sel = null; setTeam(k, p); render(true); return; }
     case 'del': { const wf = (t.wf || []).filter(x => x.id !== ui.sel); ui.sel = null; setTeam(k, { wf }); render(true); return; }
     case 'dup': { const s = (t.wf || []).find(x => x.id === ui.sel); if (!s) return; const c = { ...s, id: 'e' + Date.now().toString(36), y: Math.min(640 - s.h, s.y + s.h + 8) }; ui.sel = c.id; setTeam(k, { wf: [...t.wf, c] }); render(true); return; }
     case 'lock': if (submitChecks(k).every(x => x[0])) { setTeam(k, { lockedAt: Date.now() }); ui.sel = null; toast('Submitted. Thank you!'); } render(true); return;
@@ -631,10 +666,10 @@ app.addEventListener('click', e => {
     case 'ag-unpub': setTeam('F', { agenda: { publishedAt: null } }); render(true); return;
     case 'start': if (boardState() === 'ready') setBoard({ meeting: { startedAt: Date.now(), forced: false }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
     case 'force': setBoard({ meeting: { startedAt: Date.now(), forced: true }, stage: 'present', spot: agendaOrder()[0] }); render(true); return;
-    case 'stage': setBoard({ stage: b.dataset.s }); render(true); return;
+    case 'stage': endFix(); setBoard({ stage: b.dataset.s }); render(true); return;
     case 'ref-toggle': setBoard({ showRef: !B().showRef }); render(true); return;
-    case 'spot': setBoard({ spot: k, stage: 'present' }); render(true); return;
-    case 'spotnav': { const o = agendaOrder(); const cur = o.includes(B().spot) ? B().spot : o[0]; const n = o[o.indexOf(cur) + +b.dataset.d]; if (n) setBoard({ spot: n }); render(true); return; }
+    case 'spot': endFix(); setBoard({ spot: k, stage: 'present' }); render(true); return;
+    case 'spotnav': { endFix(); const o = agendaOrder(); const cur = o.includes(B().spot) ? B().spot : o[0]; const n = o[o.indexOf(cur) + +b.dataset.d]; if (n) setBoard({ spot: n }); render(true); return; }
     case 'cpick': { const id = b.dataset.el; ui.cedit = null;
       if (!ui.csel || ui.csel.k === k || ui.cto) { ui.csel = { k, id }; ui.cto = null; ui.clabel = ''; }
       else ui.cto = { k, id };
@@ -673,7 +708,7 @@ app.addEventListener('input', e => {
 app.addEventListener('change', e => {
   const el = e.target;
   if (el.dataset.act === 'labels') { ui.labels = el.checked; render(true); return; }
-  if (el.dataset.prop) { const k = curTeam(); const t = T(k); const wf = (t.wf || []).map(x => x.id === ui.sel ? { ...x, [el.dataset.prop]: el.value } : x); setTeam(k, { wf }); setTimeout(() => render(true), 0); return; }
+  if (el.dataset.prop) { const k = curTeam() || (route().v === 'board' && ui.fixK); if (!k) return; const t = T(k); const wf = (t.wf || []).map(x => x.id === ui.sel ? { ...x, [el.dataset.prop]: el.value } : x); setTeam(k, { wf }); setTimeout(() => render(true), 0); return; }
 });
 app.addEventListener('keydown', e => {
   if (e.key === 'Enter' && e.target.dataset.ans) { const [k, q] = e.target.dataset.ans.split('-'); app.querySelector(`[data-act="check"][data-k="${k}"][data-q="${q}"]`)?.click(); return; }
@@ -682,11 +717,11 @@ app.addEventListener('keydown', e => {
   if (e.key === 'Escape' && (ui.csel || ui.cedit != null)) { app.querySelector('[data-act="ccancel"]')?.click(); return; }
   if (e.key === 'Enter' && e.target.dataset.act === 'cpick') { e.target.click(); return; }
   if (e.key === 'Enter' && e.target.id === 'pin') { app.querySelector('[data-act="pin"]').click(); return; }
-  const k = curTeam(); if (!k || !ui.sel || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-  const t = T(k); if (t.lockedAt) return; const s = (t.wf || []).find(x => x.id === ui.sel); if (!s) return;
+  const fx = route().v === 'board' && ui.fixK; const k = curTeam() || fx; if (!k || !ui.sel || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const t = T(k); if (t.lockedAt && !fx) return; const s = (t.wf || []).find(x => x.id === ui.sel); if (!s) return;
   const mv = { ArrowLeft: [-8, 0], ArrowRight: [8, 0], ArrowUp: [0, -8], ArrowDown: [0, 8] }[e.key];
   if (mv) { e.preventDefault(); setTeam(k, { wf: t.wf.map(x => x.id === s.id ? { ...x, x: clamp(x.x + mv[0], 0, 360 - x.w), y: clamp(x.y + mv[1], 0, 640 - x.h) } : x) }); render(true); }
-  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); app.querySelector('[data-act="del"]')?.click(); }
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); app.querySelector(fx ? `[data-act="fix-rm"][data-el="${ui.sel}"]` : '[data-act="del"]')?.click(); }
 });
 function bindPhone(k) {
   const ph = document.getElementById('phone'); if (!ph) return;

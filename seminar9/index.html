@@ -175,6 +175,17 @@ textarea.inp.big{font-size:18px}
 .checks{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:13px;margin-top:10px}
 @media (max-width:700px){.checks{grid-template-columns:1fr}}
 .cmap{position:relative;margin-top:10px}
+.usedby{display:inline-block;margin-top:6px;padding:4px 12px;border-radius:999px;background:var(--panel);border:1.5px solid var(--c);font-size:14px}
+.usedby.big{font-size:17px}
+.mu{font-size:12px;color:var(--muted);margin-bottom:2px}
+.fixbar{display:flex;gap:12px;align-items:center;justify-content:space-between;background:var(--warnbg);border:1px solid #e4c48c}
+.fixgrid{display:grid;grid-template-columns:minmax(280px,1.1fr) auto minmax(260px,1fr);gap:16px;align-items:start;margin-top:10px}
+@media (max-width:1100px){.fixgrid{grid-template-columns:1fr 1fr}}
+.ffix{display:flex;gap:8px;padding:7px 4px;border-bottom:1px solid var(--soft);font-size:14px}
+.ffix.on{background:#F4F8F5}
+.fchk{flex:none;width:24px;height:24px;border:2px solid #8b8679;border-radius:6px;background:#fff;font-weight:700;color:var(--ok);padding:0;line-height:1}
+.ffix.on .fchk{border-color:var(--ok)}
+.ffix .btn{margin-top:4px}
 .intro{font-size:19px;line-height:1.5;background:var(--panel);border:1px solid var(--line);border-left:6px solid var(--F);border-radius:0 12px 12px 0;padding:14px 18px;margin:6px 0 14px}
 .cov{position:absolute;left:0;top:0;z-index:0;pointer-events:none;overflow:visible}
 .cgrid{position:relative;z-index:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:clamp(90px,11vw,170px);row-gap:110px}
@@ -203,8 +214,8 @@ details summary{cursor:pointer}
 <div id="bar"></div>
 <main id="app"><div class="wrap narrow"><p class="muted">Loading…</p></div></main>
 <noscript>This page needs JavaScript.</noscript>
-<script src="config.js?v=S9-1116-1015"></script>
-<script src="content.js?v=S9-1116-1015"></script>
-<script type="module" src="app.js?v=S9-1116-1015"></script>
+<script src="config.js?v=S9-1116-1045"></script>
+<script src="content.js?v=S9-1116-1045"></script>
+<script type="module" src="app.js?v=S9-1116-1045"></script>
 </body>
 </html>
