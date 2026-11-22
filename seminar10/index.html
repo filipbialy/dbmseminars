@@ -254,7 +254,7 @@
 <section id="v-wait" class="hidden">
   <div class="wrap" style="text-align:center;padding-top:60px">
     <div class="spinner" id="spin"></div>
-    <h1>You’re in</h1>
+    <h1 id="joinedTitle">You’re in</h1>
     <p class="muted" id="waitMsg">Waiting for your tutor to start the test…</p>
     <p class="muted" style="font-size:13px">Session <b id="waitSess"></b></p>
   </div>
@@ -2871,7 +2871,12 @@ const now = () => Date.now() + offset;
 async function joinRoom(){
   if(TEST){ lset("joined", lget("joined", 0) + 1); return; }
   await initFB();
-  await stampOffset(fb.F.doc(col("joined")));
+  const ref = fb.F.doc(col("joined")), t0 = Date.now();
+  await fb.F.setDoc(ref, {at: fb.F.serverTimestamp()});   // the tutor's counter goes up as soon as this is stored
+  const t1 = Date.now();
+  fb.F.getDocFromServer(ref).then(snap => {                 // clock offset, measured afterwards
+    const at = snap.data().at; if(at) offset = at.toMillis() - (t0 + t1) / 2;
+  }).catch(() => {});
 }
 async function submit(rec){
   if(TEST){ const l = lget("results", []); l.push(rec); lset("results", l); return; }
@@ -3003,14 +3008,25 @@ $("toClass").onclick = () => go("class");
 /* ================= STUDENT: JOIN, WAIT, QUIZ ================= */
 let deck = [], i = 0, picks = [], finished = false, started = false, sCtl = null, submitArmed = false;
 function shuffle(a){ a = a.slice(); for(let k=a.length-1;k>0;k--){ const j=Math.floor(Math.random()*(k+1)); [a[k],a[j]]=[a[j],a[k]]; } return a; }
+let joined = false, sUnsub = null;
+function studentWatch(){
+  if(sUnsub || !session) return;
+  sUnsub = watch("control", c => { sCtl = c; if(joined) studentControl(); },
+    e => { if(joined) waitMsg("Connection problem: " + (e.code || e.message) + ". Ask your tutor.", true); });
+}
 $("joinBtn").onclick = () => {
   if(!session){ const v = clean($("sessIn").value); if(!v){ $("sessIn").focus(); $("sessIn").style.borderColor = "var(--g1)"; return; } session = v; }
   $("joinBtn").disabled = true;
   $("waitSess").textContent = session;
+  $("joinedTitle").textContent = "Joining…";
+  waitMsg("Connecting to the session…", false);
   go("wait");
+  studentWatch();
   joinRoom().then(() => {
-    watch("control", c => { sCtl = c; studentControl(); }, e => waitMsg("Connection problem: " + (e.code || e.message) + ". Ask your tutor.", true));
-  }).catch(e => waitMsg("Couldn’t join the session (" + (e.code || e.message) + "). Check your connection and reload the page.", true));
+    joined = true;
+    $("joinedTitle").textContent = "You’re in";
+    studentControl();
+  }).catch(e => { $("joinedTitle").textContent = "Couldn’t join"; waitMsg("Check your connection and reload the page (" + (e.code || e.message) + ").", true); });
 };
 function waitMsg(t, stop){ $("waitMsg").textContent = t; $("spin").classList.toggle("hidden", !!stop); }
 function studentControl(){
@@ -3187,8 +3203,9 @@ if(isTutor){
   go("story");
 } else {
   if(session){ $("sessRow").classList.add("hidden"); $("sessFixed").classList.remove("hidden"); $("sessShow").textContent = session; }
-  if(!TEST) initFB().catch(() => {});
   go("welcome");
+  if(session) studentWatch();          // opens the connection while students read the start screen
+  else if(!TEST) initFB().catch(() => {});
 }
 })();
 </script>
