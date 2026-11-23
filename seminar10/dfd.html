@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cherry Perfect · data flow diagram</title>
+<style>
+  :root{--ink:#1b2430;--muted:#5b6675;--line:#d9dee5;--bg:#f6f7f9;--card:#fff;--primary:#24426b;--primary-soft:#e7edf6;--accent:#1a73e8;--warn:#b3261e;--ok:#2e7d5b}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+  button{font:inherit;cursor:pointer}
+  .btn{appearance:none;border:1px solid var(--primary);background:#fff;color:var(--primary);border-radius:999px;padding:7px 14px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+  .btn.fill{background:var(--primary);color:#fff}
+  .btn.on{background:var(--primary-soft)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn.danger{border-color:var(--warn);color:var(--warn)}
+  .hidden{display:none !important}
+  input.txt{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+  input.txt:focus{outline:2px solid var(--accent);outline-offset:0;border-color:var(--accent)}
+  /* join */
+  .join{max-width:520px;margin:8vh auto;padding:0 16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;margin:14px 0}
+  .join label{display:block;font-weight:600;margin:14px 0 6px}
+  .join input.txt{width:100%;font-size:17px}
+  .err{color:var(--warn);font-size:14px;margin-top:6px}
+  /* app */
+  .app{display:flex;flex-direction:column;height:100vh}
+  .top{display:flex;align-items:center;gap:10px;padding:8px 14px;background:#fff;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .top h1{font-size:17px;margin:0;margin-right:auto}
+  .chip{background:var(--primary-soft);color:var(--primary);border-radius:999px;padding:4px 12px;font-weight:600;font-size:14px}
+  .tchip{font:800 18px/1 ui-monospace,monospace;background:var(--primary-soft);color:var(--primary);border-radius:8px;padding:6px 10px}
+  .tchip.low{background:var(--warn);color:#fff}
+  .tm{display:flex;align-items:center;gap:6px}
+  .tm .clock{font:800 26px/1 ui-monospace,monospace;color:var(--primary);min-width:84px;text-align:center}
+  .tm .clock.low{color:var(--warn)}
+  .main{flex:1;display:flex;min-height:0}
+  .work{flex:1;display:flex;flex-direction:column;min-width:0}
+  .tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:#fff;border-bottom:1px solid var(--line)}
+  .tools .sep{width:1px;height:26px;background:var(--line)}
+  .prop{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+  .prop.off{visibility:hidden}
+  .prop input.txt{width:min(320px,40vw)}
+  .hint{padding:6px 14px;font-size:14px;color:var(--muted);background:#fbfcfd;border-bottom:1px solid var(--line)}
+  .hint b{color:var(--ink)}
+  .hint.mode{background:#fff8e6;color:#6b4e00}
+  .cv-wrap{flex:1;min-height:0;position:relative;overflow:auto}
+  #cv{display:block;touch-action:none;user-select:none}
+  .status{padding:6px 14px;font-size:14px;background:#fff;border-top:1px solid var(--line);min-height:34px}
+  .status.warn{color:var(--warn)}
+  .status.ok{color:var(--ok)}
+  aside#case{flex:0 0 min(33.333vw,520px);max-width:33.333vw;overflow-y:auto;background:#fff;border-left:1px solid var(--line);padding:16px 18px}
+  aside#case h2{font-size:18px;margin:0 0 6px}
+  aside#case h3{font-size:15px;margin:16px 0 4px}
+  aside#case p{margin:0 0 10px}
+  aside#case .task{background:var(--primary-soft);border-radius:10px;padding:10px 12px;margin-bottom:14px}
+  /* svg */
+  .bx rect{fill:#fff;stroke:#1b2430;stroke-width:2.5}
+  .bx.sel rect{stroke:var(--accent);stroke-width:4}
+  .bx.src rect{fill:#fff3c4}
+  .bx text{font:600 15px system-ui,sans-serif;fill:#1b2430;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+  .bx text.ph{font-weight:400;font-style:italic;fill:#8a94a3}
+  .fl line.vis{stroke:#1a73e8;stroke-width:3}
+  .fl.sel line.vis{stroke:#0b3d91;stroke-width:5}
+  .fl line.hit{stroke:transparent;stroke-width:18}
+  .fl text{font:500 13px system-ui,sans-serif;fill:#1b2430;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#f6f7f9;stroke-width:6px;stroke-linejoin:round;cursor:pointer}
+  .fl text.ph{fill:var(--warn);font-style:italic}
+  /* board */
+  .board{display:flex;flex-direction:column;height:100vh}
+  .grid{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:10px;padding:10px;min-height:0}
+  .cell{background:#fff;border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .cell header{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:8px 12px;border-bottom:1px solid var(--line)}
+  .cell header b{font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .cell header span{font-size:12px;color:var(--muted);white-space:nowrap}
+  .cell .dg{flex:1;min-height:0;padding:6px;cursor:zoom-in}
+  .cell .dg svg{width:100%;height:100%}
+  .cell .empty{flex:1;display:flex;align-items:center;justify-content:center;color:var(--muted);text-align:center;padding:12px;flex-direction:column;gap:10px}
+  .cell.ref{border:2px dashed var(--ok)}
+  .modal{position:fixed;inset:0;background:rgba(20,28,40,.55);display:flex;align-items:center;justify-content:center;z-index:20;padding:3vh 3vw}
+  .modal .box{background:#fff;border-radius:16px;width:100%;height:100%;display:flex;flex-direction:column;overflow:hidden}
+  .modal .box header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid var(--line)}
+  .modal .box .dg{flex:1;min-height:0;padding:12px}
+  .modal .box .dg svg{width:100%;height:100%}
+  .note{font-size:13px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<!-- ================= STUDENT: JOIN ================= -->
+<section id="v-join" class="hidden">
+  <div class="join">
+    <h1 style="margin:0 0 4px">Cherry Perfect</h1>
+    <p class="note" style="font-size:15px;margin:0">Data flow diagram · team exercise</p>
+    <div class="card">
+      <div id="sessBox">
+        <label for="sessIn">Session code</label>
+        <input class="txt" id="sessIn" maxlength="10" placeholder="Shown on the class screen" autocomplete="off">
+      </div>
+      <p class="note hidden" id="sessFixed" style="margin:0">Session <b id="sessShow"></b></p>
+      <label for="teamIn">Your team name</label>
+      <input class="txt" id="teamIn" maxlength="30" placeholder="e.g. The Lift Crew" autocomplete="off">
+      <p class="note" style="margin:6px 0 0">Use one laptop per team. The name appears above your diagram on the class screen.</p>
+      <div class="err hidden" id="joinErr"></div>
+      <div style="margin-top:16px"><button class="btn fill" id="joinBtn">Start drawing</button></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= STUDENT: EDITOR ================= -->
+<section id="v-edit" class="hidden">
+  <div class="app">
+    <div class="top">
+      <h1>Cherry Perfect · data flow diagram</h1>
+      <span class="tchip hidden" id="sTimer" title="Time left for this task"></span>
+      <span class="chip" id="teamChip"></span>
+      <button class="btn" id="switchBtn" title="Join as a different team">Switch team</button>
+      <button class="btn" id="caseBtn" aria-pressed="true">Hide case study</button>
+      <button class="btn fill" id="submitBtn">Submit to class board</button>
+    </div>
+    <div class="main">
+      <div class="work">
+        <div class="tools">
+          <button class="btn" id="addBtn">+ Add system</button>
+          <button class="btn" id="flowBtn">→ Draw data flow</button>
+          <button class="btn" id="undoBtn" title="Undo (Ctrl+Z)">↶ Undo</button>
+          <span class="sep"></span>
+          <div class="prop off" id="prop">
+            <label for="propIn" id="propLbl" class="note"></label>
+            <input class="txt" id="propIn" maxlength="60" autocomplete="off">
+            <button class="btn hidden" id="revBtn" title="Swap the direction of this arrow">⇄ Reverse</button>
+            <button class="btn danger" id="delBtn">Delete</button>
+          </div>
+        </div>
+        <div class="hint" id="hint"></div>
+        <div class="cv-wrap"><svg id="cv" viewBox="0 0 1000 700" preserveAspectRatio="xMinYMin meet" aria-label="Your data flow diagram">
+          <defs>
+            <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" fill="#cfd6df"/></pattern>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a73e8"/></marker>
+            <marker id="ahs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0b3d91"/></marker>
+          </defs>
+          <rect id="bgRect" x="0" y="0" width="4000" height="3000" fill="url(#dots)" data-bg="1"/>
+          <g id="layer"></g>
+        </svg></div>
+        <div class="status" id="status"></div>
+      </div>
+      <aside id="case">
+        <div class="task">
+          <b>Your task</b><br>
+          Draw an informal data flow diagram of Cherry Perfect. Draw one box for each <b>transaction processing system (TPS)</b> and connect the boxes with arrows. Label each arrow with the data that moves between the two systems. Systems that are not TPS don't belong on the diagram.<br><span style="font-size:14px">A TPS records and processes the routine, day-to-day transactions of the business, such as bookings, payments, employee records or equipment movements. Reporting tools and reference databases are not TPS.</span>
+        </div>
+        <h2>Cherry Perfect Group</h2>
+        <p>Cherry Perfect has grown from a small business into one of the UK’s leading providers of powered access equipment. Its services include equipment hire, sales, maintenance, training, and certification. The company also operates a related brand, Cherry People, which acts as a temporary staffing agency, supplying qualified and vetted operators to work with equipment provided by Cherry Perfect or other suppliers.</p>
+        <h3>The Marketplace: Cherry Perfect and Cherry People</h3>
+        <p>Cherry Perfect primarily serves building owners and contractors undertaking building maintenance, construction, and other activities requiring powered access equipment. The company rents equipment to clients through short-term and long-term contracts. It also provides maintenance and servicing contracts for clients who own their equipment.</p>
+        <p>Operating powered access equipment requires suitably trained and certified personnel. Cherry Perfect does not undertake this work directly but can provide qualified operators through its temporary staffing agency, Cherry People. The company also offers training and certification services.</p>
+        <p>Short-term equipment hires can range from four hours to three months, although most last only a few days. Long-term rentals involve extended hire arrangements and generally require less administration. Both types of rental require the company to manage customer bookings, equipment availability, rental agreements, and associated financial transactions.</p>
+        <h3>Organisational Structure</h3>
+        <p>The business is managed from its head office in Bolton and operates 11 depots across the UK. Four of these depots, located in Newcastle, Bolton, Nottingham, and Croydon, also serve as regional training centres and have servicing workshops and teams. In addition, the company operates 12 sub-depots in urban areas, located on sites shared with other businesses. These sub-depots primarily store smaller equipment, which is distributed by third-party providers. The company also maintains a small fleet of lorries and vans to transport equipment between depots and customer sites.</p>
+        <h3>Key Information Systems</h3>
+        <p>The company uses Odoo (www.odoo.com) as its main commercial system. Although the company uses only a small proportion of Odoo’s capabilities, the system handles its core financial functions, including processing financial transactions, accounting, and financial recordkeeping. The company also uses Sage HR to manage employee records and process changes to employee information, alongside Sage Payroll, which processes employee salary and wage payments.</p>
+        <p>The company uses an off-the-shelf asset management system, Asset Manager Pro, which maintains records of all equipment, including rental and internal equipment. These records include equipment identification, location, availability, and general maintenance history. Staff use the system to record and process equipment movements, including hires, returns, and maintenance updates. Detailed maintenance records associated with individual long-term leases are held separately in the long-term rental system. A reporting system, Asset Manager Reports, retrieves information from Asset Manager Pro to generate key performance indicators (KPIs), such as asset utilisation rates, to support medium-term asset management decisions.</p>
+        <p>Cherry Perfect uses a bespoke rental system to manage short-term equipment bookings, maintain rental records, and generate invoices. Customers can request equipment by telephone, email, or through the company's website. Rental staff enter customer requests into the rental system and check equipment availability using Asset Manager Pro. Once a booking is confirmed, the rental details are recorded in the rental system, and the equipment's hire status is updated in Asset Manager Pro. The rental system generates invoices and provides the invoice details to Odoo, where they are recorded for accounting purposes.</p>
+        <p>A newer version of the bespoke rental system is used to manage long-term equipment leases. This system processes lease agreements, maintains customer rental records, and records maintenance activities associated with individual leases. Asset Manager Pro maintains the central equipment register and general maintenance histories, while the newer rental system maintains detailed lease-specific maintenance records.</p>
+        <p>An existing web-based system allows Cherry Perfect's business-to-business (B2B) clients to submit requests for short-term equipment hire. Customers enter their equipment requirements and requested hire dates through the website. These requests are forwarded to the rental team, who process them using the bespoke rental system. Equipment availability is checked through Asset Manager Pro, and the equipment's hire status is updated once the booking is confirmed. Customers are then notified of their confirmed bookings. The web system provides an interface for submitting requests, while the rental system handles the booking transactions.</p>
+        <p>Cherry People uses a bespoke system called Cherry Portal, which maintains verified training records and qualifications for individual operators and issues relevant reminders. The system includes a basic portal through which individuals can submit details of their qualifications. Cherry People employees use the system to process qualification submissions, verify training records, and update operators' qualification statuses. This information is used to identify suitably qualified operators when responding to customer requests for temporary staff.</p>
+        <p>The company also uses several smaller systems, including a parts and engineering database containing technical specifications, parts information, and engineering reference materials used by workshop employees. A customer relationship management (CRM) system is used by the direct sales team to record and process customer enquiries, manage sales leads, and update sales records. In addition, employees use standard office applications and numerous spreadsheets containing various types of business data.</p>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<!-- ================= TUTOR: BOARD ================= -->
+<section id="v-board" class="hidden">
+  <div class="board">
+    <div class="top">
+      <h1>Cherry Perfect · class board</h1>
+      <span class="chip" id="codeBig" style="font-size:18px;padding:6px 14px"></span>
+      <span class="note" id="tmTag"></span>
+      <label class="note" for="codeIn">Session</label>
+      <input class="txt" id="codeIn" maxlength="10" style="width:110px;font-weight:700;text-transform:uppercase">
+      <button class="btn" id="codeSet">Set</button>
+      <span class="chip" id="joinCount" title="">0 teams joined</span>
+      <span class="chip" id="subCount">0 submitted</span>
+      <div class="tm" id="tSet"><label class="note" for="durIn">Timer</label><input class="txt" id="durIn" type="number" min="1" max="120" value="20" style="width:64px"><span class="note">min</span><button class="btn fill" id="tStart">Start timer</button></div>
+      <div class="tm hidden" id="tRun"><span class="clock" id="tClock">20:00</span><button class="btn" id="tAdd" title="Add 2 minutes for everyone">+2 min</button><button class="btn" id="tStop">Stop</button></div>
+      <button class="btn" id="refBtn">Show reference</button>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="status note" id="boardNote"></div>
+  </div>
+</section>
+
+<div class="modal hidden" id="modal" role="dialog" aria-modal="true">
+  <div class="box">
+    <header><b id="mTitle"></b><button class="btn" id="mClose">Close</button></header>
+    <div class="dg" id="mBody"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ================= REFERENCE (answer sheet, most comprehensive example) ================= */
+const REFERENCE = {
+  boxes: [
+    {id:"r1", name:"Sage HR", x:110, y:80},
+    {id:"r2", name:"Sage Payroll", x:480, y:80},
+    {id:"r3", name:"Odoo", x:1000, y:80},
+    {id:"r4", name:"CRM System", x:110, y:300},
+    {id:"r5", name:"Short-term Rental System", x:480, y:300},
+    {id:"r6", name:"Asset Manager Pro", x:820, y:300},
+    {id:"r7", name:"Cherry Portal", x:110, y:540},
+    {id:"r8", name:"Long-term Rental System", x:1060, y:540}
+  ],
+  flows: [
+    {id:"f1", from:"r1", to:"r2", label:"Employee details and pay changes"},
+    {id:"f2", from:"r2", to:"r3", label:"Payroll transaction data"},
+    {id:"f3", from:"r5", to:"r3", label:"Invoice details"},
+    {id:"f4", from:"r4", to:"r5", label:"Customer enquiry and booking details"},
+    {id:"f5", from:"r6", to:"r5", label:"Equipment availability"},
+    {id:"f6", from:"r5", to:"r6", label:"Confirmed hire status updates"},
+    {id:"f7", from:"r6", to:"r8", label:"Equipment records and maintenance history"},
+    {id:"f8", from:"r8", to:"r6", label:"Lease-specific maintenance updates"},
+    {id:"f9", from:"r8", to:"r3", label:"Lease invoice details"},
+    {id:"f10", from:"r4", to:"r7", label:"Temporary staff request details"},
+    {id:"f11", from:"r7", to:"r4", label:"Qualified operator information"}
+  ]
+};
+
+/* ================= DRAWING ================= */
+const BW = 170;
+function wrap(text, max){
+  const words = String(text).split(/\s+/).filter(Boolean), lines = [];
+  let cur = "";
+  words.forEach(w => { if((cur + " " + w).trim().length > max && cur){ lines.push(cur); cur = w; } else cur = (cur + " " + w).trim(); });
+  if(cur) lines.push(cur);
+  return lines.length ? lines : [""];
+}
+function boxSize(b){ const n = b.name.trim() ? wrap(b.name, 16).length : 1; return {w: BW, h: Math.max(62, n * 20 + 26)}; }
+function edgePoint(b, tx, ty){
+  const {w, h} = boxSize(b), dx = tx - b.x, dy = ty - b.y;
+  if(!dx && !dy) return {x: b.x, y: b.y};
+  const s = Math.min((w / 2) / Math.abs(dx || 1e-9), (h / 2) / Math.abs(dy || 1e-9));
+  return {x: b.x + dx * s, y: b.y + dy * s};
+}
+function flowGeom(m, f){
+  const a = m.boxes.find(b => b.id === f.from), b = m.boxes.find(b => b.id === f.to);
+  if(!a || !b) return null;
+  const pair = m.flows.some(g => g.from === f.to && g.to === f.from);
+  let dx = b.x - a.x, dy = b.y - a.y; const len = Math.hypot(dx, dy) || 1;
+  const nx = -dy / len, ny = dx / len, off = pair ? 12 : 0;
+  const ax = a.x + nx * off, ay = a.y + ny * off, bx = b.x + nx * off, by = b.y + ny * off;
+  const p1 = edgePoint({...a, x: ax, y: ay, name: a.name}, bx, by), p2 = edgePoint({...b, x: bx, y: by, name: b.name}, ax, ay);
+  const lines = f.label.trim() ? wrap(f.label, 24) : ["(name the data)"];
+  const halfW = Math.max(...lines.map(l => l.length)) * 3.6, halfH = lines.length * 8;
+  const lo = pair ? 10 + halfW * Math.abs(nx) + halfH * Math.abs(ny) : 0;
+  return {p1, p2, mx: (p1.x + p2.x) / 2 + nx * lo, my: (p1.y + p2.y) / 2 + ny * lo};
+}
+function drawModel(m, o = {}){
+  let out = "";
+  m.flows.forEach(f => {
+    const g = flowGeom(m, f); if(!g) return;
+    const sel = o.sel === f.id, lines = f.label.trim() ? wrap(f.label, 24) : ["(name the data)"];
+    const t0 = g.my - (lines.length - 1) * 8;
+    out += `<g class="fl${sel ? " sel" : ""}" data-id="${f.id}">
+      <line class="hit" x1="${g.p1.x}" y1="${g.p1.y}" x2="${g.p2.x}" y2="${g.p2.y}"/>
+      <line class="vis" x1="${g.p1.x}" y1="${g.p1.y}" x2="${g.p2.x}" y2="${g.p2.y}" marker-end="url(#${sel ? "ahs" : (o.marker || "ah")})"/>
+      ${lines.map((l, k) => `<text class="${f.label.trim() ? "" : "ph"}" x="${g.mx}" y="${t0 + k * 16}">${esc(l)}</text>`).join("")}</g>`;
+  });
+  m.boxes.forEach(b => {
+    const {w, h} = boxSize(b), named = !!b.name.trim(), lines = named ? wrap(b.name, 16) : ["Name this system"];
+    const t0 = b.y - (lines.length - 1) * 10;
+    out += `<g class="bx${o.sel === b.id ? " sel" : ""}${o.src === b.id ? " src" : ""}" data-id="${b.id}">
+      <rect x="${b.x - w / 2}" y="${b.y - h / 2}" width="${w}" height="${h}" rx="4"/>
+      ${lines.map((l, k) => `<text class="${named ? "" : "ph"}" x="${b.x}" y="${t0 + k * 20}">${esc(l)}</text>`).join("")}</g>`;
+  });
+  return out;
+}
+let mk = 0;
+function staticSVG(m){
+  const mid = "ahb" + (++mk);
+  const DEFS = `<defs><marker id="${mid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a73e8"/></marker></defs>`;
+  if(!m.boxes.length) return `<svg viewBox="0 0 400 200"><text x="200" y="100" text-anchor="middle" fill="#8a94a3" font-size="16">Empty diagram</text></svg>`;
+  let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+  m.boxes.forEach(b => { const {w, h} = boxSize(b); x0 = Math.min(x0, b.x - w / 2); y0 = Math.min(y0, b.y - h / 2); x1 = Math.max(x1, b.x + w / 2); y1 = Math.max(y1, b.y + h / 2); });
+  m.flows.forEach(f => { const g = flowGeom(m, f); if(g){ x0 = Math.min(x0, g.mx - 110); x1 = Math.max(x1, g.mx + 110); y0 = Math.min(y0, g.my - 30); y1 = Math.max(y1, g.my + 30); } });
+  const p = 24;
+  return `<svg viewBox="${x0 - p} ${y0 - p} ${x1 - x0 + 2 * p} ${y1 - y0 + 2 * p}" preserveAspectRatio="xMidYMid meet" role="img">${DEFS}${drawModel(m, {marker: mid})}</svg>`;
+}
+
+/* ================= STORE ================= */
+const params = new URLSearchParams(location.search);
+const isBoard = params.has("board") || params.has("tutor");
+const clean = v => (v || "").toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10);
+let session = clean(params.get("s"));
+const CFG = window.SEMINAR10_CONFIG || {};
+const TEST = !CFG.firebase;
+let fb = null, fbReady = null;
+function initFB(){
+  if(TEST) return Promise.resolve(null);
+  if(fbReady) return fbReady;
+  const base = "https://www.gstatic.com/firebasejs/10.12.2/";
+  fbReady = Promise.all([import(base + "firebase-app.js"), import(base + "firebase-firestore.js")]).then(([A, F]) => {
+    fb = {db: F.getFirestore(A.initializeApp(CFG.firebase, "dfd")), F};
+    return fb;
+  });
+  return fbReady;
+}
+const mem = {};
+function lget(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(e) { return mem[k] ?? d; } }
+function lset(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e) { mem[k] = v; } window.dispatchEvent(new CustomEvent("lbus", {detail: k})); }
+const boardKey = () => `dfd-test-board-${session}`;
+async function submitTeam(team, model, first){
+  const rec = {name: team.name, diagram: JSON.stringify(model), boxes: model.boxes.length, flows: model.flows.length};
+  if(TEST){
+    const all = lget(boardKey(), {}), prev = all[team.id];
+    all[team.id] = {...(prev || {}), ...rec, submittedAt: Date.now(), firstAt: prev && prev.firstAt ? prev.firstAt : Date.now()};
+    lset(boardKey(), all); return;
+  }
+  await initFB();
+  const ref = fb.F.doc(fb.db, "sessions", "dfd-" + session, "teams", team.id);
+  const data = {...rec, submittedAt: fb.F.serverTimestamp()};
+  if(first) data.firstAt = fb.F.serverTimestamp();
+  await fb.F.setDoc(ref, data, {merge: true});
+}
+function watchBoard(cb, onErr){
+  if(TEST){
+    const read = () => cb(Object.entries(lget(boardKey(), {})).map(([id, d]) => ({id, ...d})));
+    const k = boardKey(), h1 = e => { if(e.key === k) read(); }, h2 = e => { if(e.detail === k) read(); };
+    window.addEventListener("storage", h1); window.addEventListener("lbus", h2); read();
+    return () => { window.removeEventListener("storage", h1); window.removeEventListener("lbus", h2); };
+  }
+  let un = null, dead = false;
+  initFB().then(() => {
+    if(dead) return;
+    un = fb.F.onSnapshot(fb.F.collection(fb.db, "sessions", "dfd-" + session, "teams"), s => {
+      cb(s.docs.map(d => { const x = d.data({serverTimestamps: "estimate"}); const ms = v => v && v.toMillis ? v.toMillis() : v || 0; return {id: d.id, ...x, submittedAt: ms(x.submittedAt), firstAt: ms(x.firstAt) || ms(x.submittedAt), joinedAt: ms(x.joinedAt)}; }));
+    }, onErr);
+  }).catch(onErr);
+  return () => { dead = true; if(un) un(); };
+}
+
+/* shared timer: sessions/dfd-CODE/meta/control {status: "running" | "stopped", durationSec, startAt (server time)} */
+let offset = 0;
+const now = () => Date.now() + offset;
+const ctlKey = () => `dfd-test-ctl-${session}`;
+async function measureOffset(ref, field){
+  const t0 = Date.now();
+  await fb.F.setDoc(ref, {[field]: fb.F.serverTimestamp()}, {merge: true});
+  const t1 = Date.now();
+  try { const v = (await fb.F.getDocFromServer(ref)).data()[field]; if(v) offset = v.toMillis() - (t0 + t1) / 2; } catch(e) {}
+}
+async function announceTeam(t){   // lets the board count teams that have opened the tool
+  if(TEST){ const all = lget(boardKey(), {}); all[t.id] = {...(all[t.id] || {}), name: t.name, joinedAt: (all[t.id] && all[t.id].joinedAt) || Date.now()}; lset(boardKey(), all); return; }
+  await initFB();
+  const ref = fb.F.doc(fb.db, "sessions", "dfd-" + session, "teams", t.id);
+  await fb.F.setDoc(ref, {name: t.name}, {merge: true});
+  await measureOffset(ref, "joinedAt");
+}
+async function timerStart(min){
+  if(TEST){ lset(ctlKey(), {status: "running", durationSec: min * 60, startAt: Date.now()}); return; }
+  await initFB();
+  await measureOffset(fb.F.doc(fb.db, "sessions", "dfd-" + session, "meta", "tutorclock"), "at");
+  await fb.F.setDoc(fb.F.doc(fb.db, "sessions", "dfd-" + session, "meta", "control"), {status: "running", durationSec: min * 60, startAt: fb.F.serverTimestamp()});
+}
+async function timerPatch(patch){
+  if(TEST){ lset(ctlKey(), {...lget(ctlKey(), {}), ...patch}); return; }
+  await initFB();
+  await fb.F.setDoc(fb.F.doc(fb.db, "sessions", "dfd-" + session, "meta", "control"), patch, {merge: true});
+}
+function watchTimer(cb){
+  if(TEST){
+    const k = ctlKey(), read = () => cb(lget(k, null)), h1 = e => { if(e.key === k) read(); }, h2 = e => { if(e.detail === k) read(); };
+    window.addEventListener("storage", h1); window.addEventListener("lbus", h2); read();
+    return () => { window.removeEventListener("storage", h1); window.removeEventListener("lbus", h2); };
+  }
+  let un = null, dead = false;
+  initFB().then(() => {
+    if(dead) return;
+    un = fb.F.onSnapshot(fb.F.doc(fb.db, "sessions", "dfd-" + session, "meta", "control"), s => {
+      if(!s.exists()) return cb(null);
+      const d = s.data({serverTimestamps: "estimate"});
+      cb({...d, startAt: d.startAt && d.startAt.toMillis ? d.startAt.toMillis() : d.startAt});
+    }, () => {});
+  }).catch(() => {});
+  return () => { dead = true; if(un) un(); };
+}
+const endsAt = c => c && c.status === "running" && c.startAt ? c.startAt + c.durationSec * 1000 : null;
+const mmss = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
+
+/* ================= STUDENT: JOIN ================= */
+let team = null, model = {boxes: [], flows: []}, undo = [], sel = null, mode = "select", src = null;
+let submittedOnce = false, dirty = false, submitArmed = false, nextId = 1;
+const draftKey = () => `dfd-draft-${session}-${team.id}`;
+const teamKey = () => `dfd-team-${session}`;
+function rid(){ return Math.random().toString(36).slice(2, 10); }
+
+function startJoin(){
+  if(session){
+    $("sessBox").classList.add("hidden"); $("sessFixed").classList.remove("hidden"); $("sessShow").textContent = session;
+    const saved = lget(teamKey(), null);
+    if(saved){ team = saved; return openEditor(); }
+  }
+  show("join");
+}
+$("joinBtn").onclick = () => {
+  const err = t => { $("joinErr").textContent = t; $("joinErr").classList.remove("hidden"); };
+  if(!session){ const v = clean($("sessIn").value); if(!v) return err("Enter the session code shown on the class screen."); session = v; }
+  const name = $("teamIn").value.trim().replace(/\s+/g, " ");
+  if(!name) return err("Enter a team name.");
+  const known = lget(`dfd-teams-${session}`, {}), key = name.toLowerCase();
+  team = known[key] || {id: rid(), name};
+  known[key] = team; lset(`dfd-teams-${session}`, known);
+  lset(teamKey(), team);
+  if(!params.get("s")){ try { history.replaceState(null, "", location.pathname + "?s=" + encodeURIComponent(session)); } catch(e) {} }
+  openEditor();
+};
+$("switchBtn").onclick = () => {
+  lset(teamKey(), null); team = null; model = {boxes: [], flows: []}; undo = []; sel = null; mode = "select"; src = null;
+  $("teamIn").value = ""; $("joinErr").classList.add("hidden");
+  $("sessBox").classList.add("hidden"); $("sessFixed").classList.remove("hidden"); $("sessShow").textContent = session;
+  show("join"); $("teamIn").focus();
+};
+["sessIn", "teamIn"].forEach(id => $(id).addEventListener("keydown", e => { if(e.key === "Enter") $("joinBtn").click(); }));
+["sessIn", "teamIn"].forEach(id => $(id).addEventListener("input", () => $("joinErr").classList.add("hidden")));
+
+function openEditor(){
+  const d = lget(draftKey(), null);
+  model = {boxes: [], flows: []}; submittedOnce = false; dirty = false; nextId = 1; undo = []; sel = null;
+  if(d){ model = d.model; submittedOnce = !!d.submittedOnce; dirty = !!d.dirty; nextId = d.nextId || 1; }
+  if(lget("dfd-case-hidden", false)) setCase(false);
+  $("teamChip").textContent = team.name;
+  show("edit"); render(); setHint();
+  setStatus(submittedOnce ? (dirty ? "You have changes that aren't on the class board yet. Submit again when ready." : "Your latest version is on the class board.") : "Not submitted yet.", submittedOnce && !dirty ? "ok" : "");
+  announceTeam(team).catch(() => {});
+  if(sCtlUn) sCtlUn();
+  sCtlUn = watchTimer(c => { sCtl = c; tickStudent(); });
+}
+let sCtl = null, sCtlUn = null, autoDoneFor = null;
+function tickStudent(){
+  const end = endsAt(sCtl), el = $("sTimer");
+  if(!end || $("v-edit").classList.contains("hidden")){ el.classList.add("hidden"); return; }
+  const rem = end - now();
+  el.classList.remove("hidden"); el.classList.toggle("low", rem < 60000);
+  el.textContent = rem > 0 ? mmss(rem) : "Time’s up";
+  if(rem <= 0 && autoDoneFor !== end){
+    autoDoneFor = end;
+    if(model.boxes.length) sendDiagram("Time’s up. Your diagram was submitted to the class board automatically. You can still make changes and submit again if your tutor allows.");
+    else setStatus("Time’s up.", "warn");
+  }
+}
+setInterval(() => { if(!isBoard) tickStudent(); }, 500);
+function show(v){ ["join", "edit", "board"].forEach(x => $("v-" + x).classList.toggle("hidden", x !== v)); }
+
+/* ================= STUDENT: EDITOR ================= */
+const cv = $("cv"), layer = $("layer");
+function snapshot(){ undo.push(JSON.stringify(model)); if(undo.length > 60) undo.shift(); }
+function changed(){ dirty = true; submitArmed = false; save(); render(); setStatus(submittedOnce ? "You have changes that aren't on the class board yet. Submit again when ready." : "Not submitted yet."); }
+function save(){ lset(draftKey(), {model, submittedOnce, dirty, nextId}); }
+let VW = 1000, VH = 700, shownSel = null;
+const wrapEl = document.querySelector(".cv-wrap");
+function fitView(){
+  const r = wrapEl.getBoundingClientRect(); if(!r.width || !r.height) return;
+  let mx = 0, my = 0;
+  model.boxes.forEach(b => { const {w, h} = boxSize(b); mx = Math.max(mx, b.x + w / 2 + 20); my = Math.max(my, b.y + h / 2 + 20); });
+  VW = Math.round(Math.max(r.width - 2, mx)); VH = Math.round(Math.max(r.height - 2, my));
+  cv.setAttribute("viewBox", `0 0 ${VW} ${VH}`); cv.setAttribute("width", VW); cv.setAttribute("height", VH);
+}
+new ResizeObserver(() => { if(!$("v-edit").classList.contains("hidden") && !drag) fitView(); }).observe(wrapEl);
+function render(){
+  if(!drag) fitView();
+  layer.innerHTML = drawModel(model, {sel, src});
+  const item = findSel();
+  $("prop").classList.toggle("off", !item);
+  if(item){
+    const isBox = item.kind === "box";
+    $("propLbl").textContent = isBox ? "System name" : "Data on this arrow";
+    $("propIn").placeholder = isBox ? "e.g. Odoo" : "e.g. Invoice details";
+    if(document.activeElement !== $("propIn") || shownSel !== sel) $("propIn").value = isBox ? item.o.name : item.o.label;
+    shownSel = sel;
+    $("revBtn").classList.toggle("hidden", isBox);
+    $("delBtn").textContent = isBox ? "Delete system" : "Delete arrow";
+  }
+  $("undoBtn").disabled = !undo.length;
+  $("flowBtn").classList.toggle("on", mode === "connect");
+}
+function findSel(){
+  if(!sel) return null;
+  const b = model.boxes.find(x => x.id === sel); if(b) return {kind: "box", o: b};
+  const f = model.flows.find(x => x.id === sel); if(f) return {kind: "flow", o: f};
+  return null;
+}
+function setHint(){
+  const h = $("hint");
+  h.classList.toggle("mode", mode === "connect");
+  if(mode === "connect") h.innerHTML = src ? "<b>Now click the system the data goes to.</b> Click empty space or press Esc to cancel."
+                                           : "<b>Click the system the data comes from.</b> Click empty space or press Esc to cancel.";
+  else if(!model.boxes.length) h.innerHTML = "Start with <b>+ Add system</b> for each transaction processing system you find in the case study.";
+  else if(model.boxes.length < 2 || !model.flows.length) h.innerHTML = "Drag the boxes to arrange them. Then use <b>→ Draw data flow</b> to connect two systems.";
+  else h.innerHTML = "Click a box or an arrow to rename, reverse or delete it. Drag boxes to tidy the layout.";
+}
+function setStatus(t, cls){ const s = $("status"); s.textContent = t; s.className = "status" + (cls ? " " + cls : ""); }
+function svgPoint(e){ const p = cv.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; return p.matrixTransform(cv.getScreenCTM().inverse()); }
+function freeSpot(){
+  const cols = [], rows = [];
+  for(let x = 110; x <= Math.max(110, VW - 100); x += 270) cols.push(x);
+  for(let y = 70; y <= Math.max(70, VH - 50); y += 180) rows.push(y);
+  for(const y of rows) for(const x of cols) if(!model.boxes.some(b => Math.abs(b.x - x) < 230 && Math.abs(b.y - y) < 130)) return {x, y};
+  return {x: 110 + 30 * (model.boxes.length % 10), y: 70 + 30 * (model.boxes.length % 10)};
+}
+$("addBtn").onclick = () => {
+  snapshot();
+  const p = freeSpot(), b = {id: "b" + nextId++, name: "", x: p.x, y: p.y};
+  model.boxes.push(b); sel = b.id; mode = "select"; src = null;
+  changed(); setHint(); $("propIn").value = ""; $("propIn").focus();
+};
+$("flowBtn").onclick = () => {
+  if(mode === "connect"){ mode = "select"; src = null; }
+  else if(model.boxes.length < 2){ setStatus("Add at least two systems before drawing a data flow.", "warn"); return; }
+  else { mode = "connect"; src = null; sel = null; }
+  render(); setHint();
+};
+$("undoBtn").onclick = doUndo;
+function doUndo(){ if(!undo.length) return; model = JSON.parse(undo.pop()); sel = null; src = null; mode = "select"; changed(); setHint(); }
+let editSnap = false;
+$("propIn").addEventListener("focus", () => { editSnap = false; });
+$("propIn").addEventListener("input", () => {
+  const item = findSel(); if(!item) return;
+  if(!editSnap){ snapshot(); editSnap = true; }
+  if(item.kind === "box") item.o.name = $("propIn").value; else item.o.label = $("propIn").value;
+  changed();
+});
+$("propIn").addEventListener("keydown", e => { if(e.key === "Enter"){ $("propIn").blur(); } });
+$("revBtn").onclick = () => { const item = findSel(); if(!item || item.kind !== "flow") return;
+  if(model.flows.some(f => f.from === item.o.to && f.to === item.o.from)){ setStatus("There is already an arrow going the other way between these two systems. Edit or delete that one instead.", "warn"); return; }
+  snapshot(); [item.o.from, item.o.to] = [item.o.to, item.o.from]; changed(); };
+$("delBtn").onclick = deleteSel;
+function deleteSel(){
+  const item = findSel(); if(!item) return;
+  snapshot();
+  if(item.kind === "box"){ model.boxes = model.boxes.filter(b => b.id !== sel); model.flows = model.flows.filter(f => f.from !== sel && f.to !== sel); }
+  else model.flows = model.flows.filter(f => f.id !== sel);
+  sel = null; changed(); setHint();
+}
+document.addEventListener("keydown", e => {
+  if($("v-edit").classList.contains("hidden")) return;
+  const typing = document.activeElement && document.activeElement.tagName === "INPUT";
+  if(e.key === "Escape"){ if(mode === "connect"){ mode = "select"; src = null; render(); setHint(); } else if(sel){ if(typing) document.activeElement.blur(); sel = null; render(); } }
+  if(typing) return;
+  if(e.key === "Delete" && sel){ e.preventDefault(); deleteSel(); }
+  if((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z"){ e.preventDefault(); doUndo(); }
+});
+
+/* pointer: select, drag, connect */
+let drag = null;
+cv.addEventListener("mousedown", e => e.preventDefault());   // keep focus in the name/label field
+let lastClick = {id: null, t: 0};
+cv.addEventListener("pointerdown", e => {
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
+  editSnap = false;
+  const g = e.target.closest("[data-id]"), id = g ? g.dataset.id : null;
+  const isBox = g && g.classList.contains("bx");
+  if(mode === "connect"){
+    if(!isBox){ mode = "select"; src = null; render(); setHint(); return; }
+    if(!src){ src = id; render(); setHint(); return; }
+    if(src === id){ return; }
+    if(model.flows.some(f => f.from === src && f.to === id)){ setStatus("There is already an arrow in that direction between these two systems. Click it to edit its label.", "warn"); mode = "select"; src = null; render(); setHint(); return; }
+    snapshot();
+    const f = {id: "f" + nextId++, from: src, to: id, label: ""};
+    model.flows.push(f); sel = f.id; mode = "select"; src = null;
+    changed(); setHint(); $("propIn").value = ""; $("propIn").focus();
+    return;
+  }
+  if(!id){ if(sel){ sel = null; render(); } return; }
+  const now = Date.now(), again = lastClick.id === id && now - lastClick.t < 450;
+  lastClick = {id, t: now};
+  sel = id; render();
+  if(again){ $("propIn").focus(); $("propIn").select(); return; }
+  if(isBox){
+    const b = model.boxes.find(x => x.id === id), p = svgPoint(e);
+    drag = {b, dx: p.x - b.x, dy: p.y - b.y, moved: false, start: JSON.stringify(model)};
+    cv.setPointerCapture(e.pointerId);
+  }
+});
+cv.addEventListener("pointermove", e => {
+  if(!drag) return;
+  const p = svgPoint(e), {w, h} = boxSize(drag.b);
+  const nx = Math.min(VW - w / 2, Math.max(w / 2, p.x - drag.dx)), ny = Math.min(VH - h / 2, Math.max(h / 2, p.y - drag.dy));
+  if(!drag.moved && Math.hypot(nx - drag.b.x, ny - drag.b.y) < 3) return;
+  drag.moved = true; drag.b.x = Math.round(nx); drag.b.y = Math.round(ny); render();
+});
+cv.addEventListener("pointerup", () => {
+  if(drag && drag.moved){ undo.push(drag.start); changed(); }
+  drag = null;
+});
+
+
+/* case panel */
+function setCase(showIt){
+  $("case").classList.toggle("hidden", !showIt);
+  $("caseBtn").textContent = showIt ? "Hide case study" : "Show case study";
+  $("caseBtn").setAttribute("aria-pressed", String(showIt));
+  lset("dfd-case-hidden", !showIt);
+}
+$("caseBtn").onclick = () => setCase($("case").classList.contains("hidden"));
+
+/* submit */
+$("submitBtn").onclick = () => {
+  if(!model.boxes.length){ setStatus("Your diagram is empty. Add some systems first.", "warn"); return; }
+  const issues = [];
+  const unnamed = model.boxes.filter(b => !b.name.trim()).length;
+  const unlabelled = model.flows.filter(f => !f.label.trim()).length;
+  const lonely = model.boxes.filter(b => !model.flows.some(f => f.from === b.id || f.to === b.id)).length;
+  if(unnamed) issues.push(`${unnamed} ${unnamed === 1 ? "system has" : "systems have"} no name`);
+  if(unlabelled) issues.push(`${unlabelled} ${unlabelled === 1 ? "arrow has" : "arrows have"} no data label`);
+  if(lonely) issues.push(`${lonely} ${lonely === 1 ? "system isn't" : "systems aren't"} connected to anything`);
+  if(issues.length && !submitArmed){
+    submitArmed = true;
+    setStatus("Check before submitting: " + issues.join("; ") + ". Press Submit again to send it anyway.", "warn");
+    return;
+  }
+  submitArmed = false;
+  sendDiagram();
+};
+function sendDiagram(doneMsg){
+  $("submitBtn").disabled = true; setStatus("Sending your diagram to the class board…");
+  const first = !submittedOnce;
+  submitTeam(team, model, first).then(() => {
+    submittedOnce = true; dirty = false; save();
+    const t = new Date().toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"});
+    setStatus(doneMsg || `Submitted at ${t}. The class board now shows this version. You can keep editing and submit again.`, "ok");
+  }).catch(e => setStatus("Couldn't reach the class board (" + (e.code || e.message) + "). Check your connection and press Submit again.", "warn"))
+    .finally(() => $("submitBtn").disabled = false);
+}
+
+/* ================= TUTOR: BOARD ================= */
+let teams = [], refShown = false, unBoard = null, modalItem = null, page = 0, bCtl = null, bCtlUn = null;
+$("tStart").onclick = () => {
+  if(!session){ $("boardNote").textContent = "Set a session code first."; $("codeIn").focus(); return; }
+  const m = Math.min(120, Math.max(1, parseInt($("durIn").value, 10) || 20));
+  $("tStart").disabled = true;
+  timerStart(m).catch(e => $("boardNote").textContent = "Couldn't start the timer: " + (e.code || e.message)).finally(() => $("tStart").disabled = false);
+};
+$("tAdd").onclick = () => { if(bCtl) timerPatch({durationSec: (bCtl.durationSec || 0) + 120}).catch(() => {}); };
+$("tStop").onclick = () => timerPatch({status: "stopped"}).catch(() => {});
+function tickBoard(){
+  const end = endsAt(bCtl);
+  $("tSet").classList.toggle("hidden", !!end); $("tRun").classList.toggle("hidden", !end);
+  if(!end) return;
+  const rem = end - now();
+  $("tClock").textContent = rem > 0 ? mmss(rem) : "Time’s up";
+  $("tClock").classList.toggle("low", rem < 60000);
+  $("tStop").textContent = rem > 0 ? "Stop" : "Reset";
+}
+setInterval(() => { if(isBoard) tickBoard(); }, 500);
+function startBoard(){
+  $("tmTag").textContent = TEST ? "TEST MODE: diagrams stay in this browser" : "";
+  show("board");
+  if(session) subscribeBoard();
+  else { $("codeBig").textContent = "No session code yet"; renderBoard(); $("boardNote").textContent = "Type a session code at the top and press Set. Students type the same code when they open the tool."; $("codeIn").focus(); }
+}
+function subscribeBoard(){
+  if(unBoard) unBoard();
+  teams = []; $("codeIn").value = session;
+  $("codeBig").textContent = "Session code: " + session;
+  renderBoard();
+  if(bCtlUn) bCtlUn();
+  bCtlUn = watchTimer(c => { bCtl = c; tickBoard(); });
+  unBoard = watchBoard(list => { teams = list; $("boardNote").textContent = ""; renderBoard(); },
+    e => { $("boardNote").textContent = "Can't reach the database: " + (e.code || e.message); });
+}
+$("codeSet").onclick = () => { const v = clean($("codeIn").value); if(v && v !== session){ session = v; subscribeBoard(); } };
+$("codeIn").addEventListener("keydown", e => { if(e.key === "Enter") $("codeSet").click(); });
+$("refBtn").onclick = () => { refShown = !refShown; renderBoard(); };
+const PER = 8;   // 3 x 3 grid: 8 team diagrams + the reference
+function teamModel(t){ try { return JSON.parse(t.diagram); } catch(e) { return {boxes: [], flows: []}; } }
+function renderBoard(){
+  const sorted = teams.filter(t => t.diagram).sort((a, b) => (a.firstAt || 0) - (b.firstAt || 0));
+  $("joinCount").textContent = `${teams.length} ${teams.length === 1 ? "team" : "teams"} joined`;
+  $("joinCount").title = teams.map(t => t.name).join(", ");
+  const pages = Math.max(1, Math.ceil(sorted.length / PER)); if(page >= pages) page = pages - 1;
+  const shown = sorted.slice(page * PER, page * PER + PER);
+  $("subCount").textContent = `${sorted.length} submitted`;
+  $("refBtn").textContent = refShown ? "Hide reference" : "Show reference";
+  let html = "";
+  for(let k = 0; k < PER; k++){
+    const t = shown[k];
+    if(!t){ html += `<div class="cell"><header><b>Team ${page * PER + k + 1}</b><span></span></header><div class="empty">Waiting for a team to submit…</div></div>`; continue; }
+    const m = teamModel(t), time = t.submittedAt ? new Date(t.submittedAt).toLocaleTimeString([], {hour: "2-digit", minute: "2-digit"}) : "";
+    html += `<div class="cell"><header><b title="${esc(t.name)}">${esc(t.name)}</b><span${m.flows.length ? "" : ' style="color:#b3261e"'}>${m.boxes.length} ${m.boxes.length === 1 ? "system" : "systems"} · ${m.flows.length} ${m.flows.length === 1 ? "flow" : "flows"} · ${time}</span></header>
+      <div class="dg" data-open="${esc(t.id)}">${staticSVG(m)}</div></div>`;
+  }
+  html += refShown
+    ? `<div class="cell ref"><header><b>Reference answer</b><span>8 systems · 11 flows</span></header><div class="dg" data-open="__ref">${staticSVG(REFERENCE)}</div></div>`
+    : `<div class="cell ref"><header><b>Reference answer</b><span>hidden</span></header><div class="empty">Discuss the teams’ diagrams first.<button class="btn" data-reveal="1">Show reference</button></div></div>`;
+  $("grid").innerHTML = html;
+  $("boardNote").innerHTML = pages > 1 ? `Showing teams ${page * PER + 1}–${Math.min(sorted.length, page * PER + PER)} of ${sorted.length}. <button class="btn" data-page="1">Show next teams</button>` : "";
+  if(modalItem) openModal(modalItem);
+}
+document.addEventListener("click", e => {
+  const r = e.target.closest("[data-reveal]"); if(r){ refShown = true; renderBoard(); return; }
+  const pg = e.target.closest("[data-page]"); if(pg){ page = (page + 1) % Math.max(1, Math.ceil(teams.filter(t => t.diagram).length / PER)); renderBoard(); return; }
+  const o = e.target.closest("[data-open]"); if(o && !$("v-board").classList.contains("hidden")){ e.preventDefault(); openModal(o.dataset.open); }
+});
+function openModal(id){
+  modalItem = id;
+  let title, m;
+  if(id === "__ref"){ title = "Reference answer"; m = REFERENCE; }
+  else { const t = teams.find(x => x.id === id); if(!t) return closeModal(); title = t.name; m = teamModel(t); }
+  $("mTitle").textContent = title; $("mBody").innerHTML = staticSVG(m); $("modal").classList.remove("hidden");
+}
+function closeModal(){ modalItem = null; $("modal").classList.add("hidden"); }
+$("mClose").onclick = closeModal;
+$("modal").addEventListener("click", e => { if(e.target === $("modal")) closeModal(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape" && !$("modal").classList.contains("hidden")) closeModal(); });
+
+/* ================= START ================= */
+if(isBoard) startBoard(); else startJoin();
+})();
+</script>
+</body>
+</html>

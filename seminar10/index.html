@@ -134,8 +134,8 @@
       <div class="two">
         <div>
           <h1>The planes that came back</h1>
-          <p>Second World War. Bombers return from missions covered in bullet holes: in the wings, the fuselage and the tail. Hardly any are in the engines.</p>
-          <p>Armour is heavy, so you can only add a little.</p>
+          <p>During the Second World War, the Allies' bombers were returning from missions covered in bullet holes. They were mostly in the wings, the fuselage and the tail, hardly in the engines.</p>
+          <p>Armour is heavy, so only a little could be added.</p>
           <p><b>Where would you put it?</b></p>
         </div>
         <div class="plane-box big" id="storyPlane1"></div>
@@ -184,10 +184,10 @@
       </div>
       <div style="text-align:center">
         <p class="muted" style="margin-bottom:4px">Session</p>
-        <div class="code" id="codeShow">MON</div>
+        <div class="code" id="codeShow"></div>
         <div class="row" style="justify-content:center;margin:8px 0 22px" id="codeRow">
           <input class="codein" id="codeIn" maxlength="8" aria-label="Session code">
-          <button class="btn ghost" id="codeSet" style="min-height:36px;padding:8px 14px">Change</button>
+          <button class="btn ghost" id="codeSet" style="min-height:36px;padding:8px 14px">Set</button>
         </div>
 
         <div id="phWait">
@@ -243,7 +243,7 @@
     </div>
     <div class="row" style="margin-top:12px;font-size:14px" id="sessRow">
       <label for="sessIn" class="muted">Session code</label>
-      <input class="codein" id="sessIn" maxlength="8" placeholder="e.g. MON">
+      <input class="codein" id="sessIn" maxlength="8">
     </div>
     <div class="row" style="margin-top:16px"><button class="btn" id="joinBtn">Join</button></div>
     <p class="muted hidden" style="font-size:13px;margin-top:10px" id="sessFixed">Session <b id="sessShow"></b></p>
@@ -2955,7 +2955,9 @@ $("stNext").onclick = () => step < 3 ? showStep(step+1) : go("qr");
 let tCtl = null, tJoined = 0, cache = [], tUnsubs = [], autoEnded = false, endArmed = false;
 function studentURL(){ return location.origin + location.pathname + "?s=" + encodeURIComponent(session); }
 function renderQR(){
-  $("codeShow").textContent = session; $("codeIn").value = session;
+  $("codeShow").textContent = session || "—"; $("codeIn").value = session;
+  $("startTest").disabled = !session;
+  if(!session){ $("qrBox").innerHTML = "<p style='text-align:center'>Type a session code on the right and press Set.<br>The QR code appears here.</p>"; $("qrUrl").textContent = ""; refreshTutor(); return; }
   const url = studentURL(); $("qrUrl").textContent = url;
   try { const qr = qrcode(0, "M"); qr.addData(url); qr.make(); $("qrBox").innerHTML = qr.createSvgTag({cellSize:6, margin:2, scalable:true}); }
   catch(e) { $("qrBox").innerHTML = "<p>QR code unavailable</p>"; }
@@ -2969,6 +2971,7 @@ function tutorSubscribe(){
   tUnsubs.push(watch("results", l => { cache = l; refreshTutor(); }, connErr));
 }
 $("codeSet").onclick = () => { const v = clean($("codeIn").value); if(v && v !== session){ session = v; selArea = null; tutorSubscribe(); renderQR(); } };
+$("codeIn").addEventListener("keydown", e => { if(e.key === "Enter") $("codeSet").click(); });
 $("startTest").onclick = () => {
   const m = Math.min(90, Math.max(1, parseInt($("durIn").value, 10) || 15));
   $("startTest").disabled = true;
@@ -3202,10 +3205,9 @@ $("tbClear").onclick = () => { lset("results", []); lset("joined", 0); lset("con
 
 /* ================= START ================= */
 if(isTutor){
-  if(!session) session = "MON";
   $("tbar").classList.remove("hidden");
   $("testTag").classList.toggle("hidden", !TEST);
-  tutorSubscribe();
+  if(session) tutorSubscribe();
   go("story");
 } else {
   if(session){ $("sessRow").classList.add("hidden"); $("sessFixed").classList.remove("hidden"); $("sessShow").textContent = session; }
