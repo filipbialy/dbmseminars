@@ -64,6 +64,46 @@
   .fl line.hit{stroke:transparent;stroke-width:18}
   .fl text{font:500 13px system-ui,sans-serif;fill:#1b2430;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#f6f7f9;stroke-width:6px;stroke-linejoin:round;cursor:pointer}
   .fl text.ph{fill:var(--warn);font-style:italic}
+
+  /* reference view */
+  .fl line.vis.inf{stroke:#b26a00;stroke-dasharray:9 6}
+  .fl.sel line.vis.inf{stroke:#7a4800}
+  .bx.muted rect{stroke:#8a94a3;stroke-dasharray:7 5;stroke-width:2}
+  .refdg .bx:not(.muted) rect,.cell.ref .bx:not(.muted) rect{fill:#d6f0e5;stroke:#1d9e75}
+  .refdg .bx.sel rect{stroke:#0b3d91;stroke-width:4}
+  .bx.muted text{fill:#5b6675}
+  .refwrap{display:flex;gap:16px;height:100%;min-height:0}
+  .refmain{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+  .reftools{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+  .seg{display:inline-flex;border:1px solid var(--primary);border-radius:999px;overflow:hidden}
+  .seg button{border:0;background:#fff;color:var(--primary);padding:7px 14px;font-weight:600}
+  .seg button.on{background:var(--primary);color:#fff}
+  .refdg{flex:1;min-height:0}
+  .refdg svg{width:100%;height:100%}
+  .refdg .bx,.refdg .fl{cursor:pointer}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);margin:6px 0}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .sw{display:inline-block;width:14px;height:14px;border-radius:3px}
+  .sw-tps{background:#d6f0e5;border:2px solid #1d9e75}
+  .sw-muted{border:2px dashed #8a94a3}
+  .sw-other{background:#ebe8fb;border:2px solid #6a5fc8}
+  .ln{display:inline-block;width:26px;height:0;border-top:3px solid #1a73e8}
+  .ln-inferred{border-top:3px dashed #b26a00}
+  .others{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+  .chip-o{border:1px solid #6a5fc8;background:#ebe8fb;color:#3c3489;border-radius:999px;padding:4px 10px;font-size:13px}
+  .chip-o.on{background:#6a5fc8;color:#fff}
+  aside.reftext{flex:0 0 40%;max-width:40%;overflow-y:auto;border-left:1px solid var(--line);padding:0 4px 0 16px;font-size:15px;line-height:1.6}
+  aside.reftext h2{font-size:18px;margin:10px 0 6px} aside.reftext h3{font-size:15px;margin:14px 0 4px} aside.reftext p{margin:0 0 10px}
+  .refinfo{position:sticky;top:0;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:0 0 8px;font-size:14px;z-index:1}
+  .tag{display:inline-block;border-radius:6px;padding:1px 8px;font-size:12px;font-weight:700}
+  .tag-tps{background:#d6f0e5;color:#085041} .tag-other{background:#ebe8fb;color:#3c3489}
+  .tag-stated{background:#dcebfb;color:#0c447c} .tag-inferred{background:#fbefd5;color:#633806}
+  .hl{border-radius:4px;padding:1px 2px;cursor:pointer;transition:opacity .2s}
+  .hl-tps{background:#d6f0e5} .hl-other{background:#ebe8fb} .hl-stated{background:#dcebfb} .hl-inferred{background:#fbefd5}
+  .reftext.var-stated .hl-inferred{background:none;cursor:default;padding:0}
+  .reftext.focus .hl{opacity:.35}
+  .reftext.focus .hl.on{opacity:1;outline:2px solid #1b2430;outline-offset:1px}
+  .hl-tps.on{background:#9fe1cb} .hl-other.on{background:#cecbf6} .hl-stated.on{background:#b5d4f4} .hl-inferred.on{background:#fac775}
   /* board */
   .board{display:flex;flex-direction:column;height:100vh}
   .grid{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,minmax(0,1fr));gap:10px;padding:10px;min-height:0}
@@ -203,32 +243,74 @@
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 
-/* ================= REFERENCE (answer sheet, most comprehensive example) ================= */
-const REFERENCE = {
-  boxes: [
-    {id:"r1", name:"Sage HR", x:110, y:80},
-    {id:"r2", name:"Sage Payroll", x:480, y:80},
-    {id:"r3", name:"Odoo", x:1000, y:80},
-    {id:"r4", name:"CRM System", x:110, y:300},
-    {id:"r5", name:"Short-term Rental System", x:480, y:300},
-    {id:"r6", name:"Asset Manager Pro", x:820, y:300},
-    {id:"r7", name:"Cherry Portal", x:110, y:540},
-    {id:"r8", name:"Long-term Rental System", x:1060, y:540}
-  ],
-  flows: [
-    {id:"f1", from:"r1", to:"r2", label:"Employee details and pay changes"},
-    {id:"f2", from:"r2", to:"r3", label:"Payroll transaction data"},
-    {id:"f3", from:"r5", to:"r3", label:"Invoice details"},
-    {id:"f4", from:"r4", to:"r5", label:"Customer enquiry and booking details"},
-    {id:"f5", from:"r6", to:"r5", label:"Equipment availability"},
-    {id:"f6", from:"r5", to:"r6", label:"Confirmed hire status updates"},
-    {id:"f7", from:"r6", to:"r8", label:"Equipment records and maintenance history"},
-    {id:"f8", from:"r8", to:"r6", label:"Lease-specific maintenance updates"},
-    {id:"f9", from:"r8", to:"r3", label:"Lease invoice details"},
-    {id:"f10", from:"r4", to:"r7", label:"Temporary staff request details"},
-    {id:"f11", from:"r7", to:"r4", label:"Qualified operator information"}
-  ]
+/* ================= REFERENCE: built from the case text =================
+   Two versions: flows stated in the text, and the same plus reasonable inferences.
+   Labels are quotations from the case. Grey dashed boxes = TPS with no flow in that version. */
+const REF_POS = {sagehr:[110,80], payroll:[475,80], odoo:[840,80], st:[110,300], amp:[475,300], lt:[840,300], crm:[110,450], portal:[350,450]};
+const REF_NAMES = {sagehr:"Sage HR", payroll:"Sage Payroll", odoo:"Odoo", st:"Short-term Rental System", amp:"Asset Manager Pro", lt:"Long-term Rental System", crm:"CRM System", portal:"Cherry Portal"};
+const REF_FLOWS_STATED = [
+  {id:"f_av", from:"amp", to:"st", label:"“equipment availability”", kind:"stated"},
+  {id:"f_hs", from:"st", to:"amp", label:"“hire status”", kind:"stated"},
+  {id:"f_inv", from:"st", to:"odoo", label:"“the invoice details”", kind:"stated"}
+];
+const REF_FLOWS_INFERRED = [
+  {id:"i_emp", from:"sagehr", to:"payroll", label:"“employee information”", kind:"inferred"},
+  {id:"i_pay", from:"payroll", to:"odoo", label:"“salary and wage payments”", kind:"inferred"},
+  {id:"i_ltav", from:"amp", to:"lt", label:"“equipment availability”", kind:"inferred"},
+  {id:"i_lths", from:"lt", to:"amp", label:"“hire status”", kind:"inferred"},
+  {id:"i_ltfin", from:"lt", to:"odoo", label:"“associated financial transactions”", kind:"inferred"}
+];
+function refBuild(flows){
+  const used = new Set(flows.flatMap(f => [f.from, f.to]));
+  return {boxes: Object.keys(REF_POS).map(id => ({id, name: REF_NAMES[id], x: REF_POS[id][0], y: REF_POS[id][1], muted: !used.has(id)})), flows};
+}
+const REF_STATED = refBuild(REF_FLOWS_STATED);
+const REF_INFERRED = refBuild([...REF_FLOWS_STATED, ...REF_FLOWS_INFERRED]);
+let refVariant = "stated", refSel = null, refText = true;
+const refModel = () => refVariant === "stated" ? REF_STATED : REF_INFERRED;
+
+/* items that can be selected: category + one-line note */
+const REF_ITEMS = {
+  odoo:{cat:"tps", name:"Odoo", note:"TPS: processes financial transactions, accounting and financial records."},
+  sagehr:{cat:"tps", name:"Sage HR", note:"TPS: processes changes to employee information."},
+  payroll:{cat:"tps", name:"Sage Payroll", note:"TPS: processes salary and wage payments."},
+  amp:{cat:"tps", name:"Asset Manager Pro", note:"TPS: records equipment movements (hires, returns, maintenance updates)."},
+  st:{cat:"tps", name:"Short-term rental system", note:"TPS: short-term bookings, rental records and invoices."},
+  lt:{cat:"tps", name:"Long-term rental system", note:"TPS: lease agreements, rental records and lease-specific maintenance records."},
+  crm:{cat:"tps", name:"CRM system", note:"TPS: records and processes customer enquiries and sales records. The text describes no flow to another system."},
+  portal:{cat:"tps", name:"Cherry Portal", note:"TPS: processes operators’ qualification submissions. The text describes no flow to another system."},
+  amr:{cat:"other", name:"Asset Manager Reports", note:"Not a TPS: a reporting system (MIS) that turns Asset Manager Pro data into KPIs."},
+  web:{cat:"other", name:"Customer web system", note:"Not a TPS: an interface for submitting requests; the rental system handles the transactions."},
+  parts:{cat:"other", name:"Parts and engineering database", note:"Not a TPS: a reference database for workshop staff."},
+  office:{cat:"other", name:"Office applications and spreadsheets", note:"Not a TPS: general-purpose tools."},
+  f_av:{cat:"stated", name:"Asset Manager Pro → Short-term rental system", note:"Stated: rental staff check equipment availability in Asset Manager Pro."},
+  f_hs:{cat:"stated", name:"Short-term rental system → Asset Manager Pro", note:"Stated: hire status is updated in Asset Manager Pro once a booking is confirmed."},
+  f_inv:{cat:"stated", name:"Short-term rental system → Odoo", note:"Stated: the rental system provides the invoice details to Odoo."},
+  i_emp:{cat:"inferred", name:"Sage HR → Sage Payroll", note:"Inferred: payroll needs the employee information Sage HR keeps; the two are used “alongside” each other."},
+  i_pay:{cat:"inferred", name:"Sage Payroll → Odoo", note:"Inferred: salary and wage payments are financial transactions, which Odoo processes and records."},
+  i_ltav:{cat:"inferred", name:"Asset Manager Pro → Long-term rental system", note:"Inferred: both rental types need equipment availability, which Asset Manager Pro records."},
+  i_lths:{cat:"inferred", name:"Long-term rental system → Asset Manager Pro", note:"Inferred: Asset Manager Pro records all hires and returns, so leases update it too. Lease-specific maintenance stays in the long-term system."},
+  i_ltfin:{cat:"inferred", name:"Long-term rental system → Odoo", note:"Inferred: leases have “associated financial transactions”, and Odoo processes the company’s financial transactions."}
 };
+const CAT_LABEL = {tps:"TPS", other:"Other software (not TPS)", stated:"Stated data flow", inferred:"Inferred data flow"};
+const H = (cat, refs, text) => `<span class="hl hl-${cat}" data-refs="${refs}">${text}</span>`;
+const CASE_HL = `
+<h2>Cherry Perfect Group</h2>
+<p>Cherry Perfect has grown from a small business into one of the UK’s leading providers of powered access equipment. Its services include equipment hire, sales, maintenance, training, and certification. The company also operates a related brand, Cherry People, which acts as a temporary staffing agency, supplying qualified and vetted operators to work with equipment provided by Cherry Perfect or other suppliers.</p>
+<h3>The Marketplace: Cherry Perfect and Cherry People</h3>
+<p>Cherry Perfect primarily serves building owners and contractors undertaking building maintenance, construction, and other activities requiring powered access equipment. The company rents equipment to clients through short-term and long-term contracts. It also provides maintenance and servicing contracts for clients who own their equipment.</p>
+<p>Operating powered access equipment requires suitably trained and certified personnel. Cherry Perfect does not undertake this work directly but can provide qualified operators through its temporary staffing agency, Cherry People. The company also offers training and certification services.</p>
+<p>Short-term equipment hires can range from four hours to three months, although most last only a few days. Long-term rentals involve extended hire arrangements and generally require less administration. ${H("inferred","i_ltav i_lths i_ltfin","Both types of rental require the company to manage customer bookings, equipment availability, rental agreements, and associated financial transactions.")}</p>
+<h3>Organisational Structure</h3>
+<p>The business is managed from its head office in Bolton and operates 11 depots across the UK. Four of these depots, located in Newcastle, Bolton, Nottingham, and Croydon, also serve as regional training centres and have servicing workshops and teams. In addition, the company operates 12 sub-depots in urban areas, located on sites shared with other businesses. These sub-depots primarily store smaller equipment, which is distributed by third-party providers. The company also maintains a small fleet of lorries and vans to transport equipment between depots and customer sites.</p>
+<h3>Key Information Systems</h3>
+<p>The company uses ${H("tps","odoo","Odoo (www.odoo.com) as its main commercial system")}. Although the company uses only a small proportion of Odoo’s capabilities, the system ${H("tps","odoo i_pay i_ltfin","handles its core financial functions, including processing financial transactions, accounting, and financial recordkeeping")}. The company also uses ${H("tps","sagehr i_emp","Sage HR to manage employee records and process changes to employee information")}, alongside ${H("tps","payroll i_emp i_pay","Sage Payroll, which processes employee salary and wage payments")}.</p>
+<p>The company uses an off-the-shelf asset management system, ${H("tps","amp","Asset Manager Pro, which maintains records of all equipment, including rental and internal equipment")}. These records include equipment identification, location, availability, and general maintenance history. ${H("tps","amp i_ltav i_lths","Staff use the system to record and process equipment movements, including hires, returns, and maintenance updates")}. ${H("tps","lt i_lths","Detailed maintenance records associated with individual long-term leases are held separately in the long-term rental system")}. ${H("other","amr","A reporting system, Asset Manager Reports, retrieves information from Asset Manager Pro to generate key performance indicators (KPIs), such as asset utilisation rates, to support medium-term asset management decisions")}.</p>
+<p>Cherry Perfect uses ${H("tps","st","a bespoke rental system to manage short-term equipment bookings, maintain rental records, and generate invoices")}. Customers can request equipment by telephone, email, or through the company's website. Rental staff enter customer requests into the rental system and ${H("stated","f_av","check equipment availability using Asset Manager Pro")}. Once a booking is confirmed, the rental details are recorded in the rental system, and ${H("stated","f_hs","the equipment's hire status is updated in Asset Manager Pro")}. ${H("stated","f_inv","The rental system generates invoices and provides the invoice details to Odoo, where they are recorded for accounting purposes")}.</p>
+<p>${H("tps","lt i_ltfin","A newer version of the bespoke rental system is used to manage long-term equipment leases")}. ${H("tps","lt","This system processes lease agreements, maintains customer rental records, and records maintenance activities associated with individual leases")}. Asset Manager Pro maintains the central equipment register and general maintenance histories, while ${H("tps","lt i_lths","the newer rental system maintains detailed lease-specific maintenance records")}.</p>
+<p>${H("other","web","An existing web-based system allows Cherry Perfect's business-to-business (B2B) clients to submit requests for short-term equipment hire")}. Customers enter their equipment requirements and requested hire dates through the website. These requests are forwarded to the rental team, who process them using the bespoke rental system. ${H("stated","f_av","Equipment availability is checked through Asset Manager Pro")}, and ${H("stated","f_hs","the equipment's hire status is updated once the booking is confirmed")}. Customers are then notified of their confirmed bookings. ${H("other","web","The web system provides an interface for submitting requests, while the rental system handles the booking transactions")}.</p>
+<p>${H("tps","portal","Cherry People uses a bespoke system called Cherry Portal, which maintains verified training records and qualifications for individual operators and issues relevant reminders")}. The system includes a basic portal through which individuals can submit details of their qualifications. ${H("tps","portal","Cherry People employees use the system to process qualification submissions, verify training records, and update operators' qualification statuses")}. This information is used to identify suitably qualified operators when responding to customer requests for temporary staff.</p>
+<p>The company also uses several smaller systems, including ${H("other","parts","a parts and engineering database containing technical specifications, parts information, and engineering reference materials used by workshop employees")}. ${H("tps","crm","A customer relationship management (CRM) system is used by the direct sales team to record and process customer enquiries, manage sales leads, and update sales records")}. In addition, ${H("other","office","employees use standard office applications and numerous spreadsheets containing various types of business data")}.</p>`;
 
 /* ================= DRAWING ================= */
 const BW = 170;
@@ -263,32 +345,34 @@ function drawModel(m, o = {}){
   let out = "";
   m.flows.forEach(f => {
     const g = flowGeom(m, f); if(!g) return;
-    const sel = o.sel === f.id, lines = f.label.trim() ? wrap(f.label, 24) : ["(name the data)"];
+    const sel = o.sel === f.id, inf = f.kind === "inferred", lines = f.label.trim() ? wrap(f.label, 24) : ["(name the data)"];
+    const mkr = sel ? (o.markerSel || "ahs") : inf ? (o.markerInf || o.marker || "ah") : (o.marker || "ah");
     const t0 = g.my - (lines.length - 1) * 8;
     out += `<g class="fl${sel ? " sel" : ""}" data-id="${f.id}">
       <line class="hit" x1="${g.p1.x}" y1="${g.p1.y}" x2="${g.p2.x}" y2="${g.p2.y}"/>
-      <line class="vis" x1="${g.p1.x}" y1="${g.p1.y}" x2="${g.p2.x}" y2="${g.p2.y}" marker-end="url(#${sel ? "ahs" : (o.marker || "ah")})"/>
+      <line class="vis${inf ? " inf" : ""}" x1="${g.p1.x}" y1="${g.p1.y}" x2="${g.p2.x}" y2="${g.p2.y}" marker-end="url(#${mkr})"/>
       ${lines.map((l, k) => `<text class="${f.label.trim() ? "" : "ph"}" x="${g.mx}" y="${t0 + k * 16}">${esc(l)}</text>`).join("")}</g>`;
   });
   m.boxes.forEach(b => {
     const {w, h} = boxSize(b), named = !!b.name.trim(), lines = named ? wrap(b.name, 16) : ["Name this system"];
     const t0 = b.y - (lines.length - 1) * 10;
-    out += `<g class="bx${o.sel === b.id ? " sel" : ""}${o.src === b.id ? " src" : ""}" data-id="${b.id}">
+    out += `<g class="bx${b.muted ? " muted" : ""}${o.sel === b.id ? " sel" : ""}${o.src === b.id ? " src" : ""}" data-id="${b.id}">
       <rect x="${b.x - w / 2}" y="${b.y - h / 2}" width="${w}" height="${h}" rx="4"/>
       ${lines.map((l, k) => `<text class="${named ? "" : "ph"}" x="${b.x}" y="${t0 + k * 20}">${esc(l)}</text>`).join("")}</g>`;
   });
   return out;
 }
 let mk = 0;
-function staticSVG(m){
+function staticSVG(m, o = {}){
   const mid = "ahb" + (++mk);
-  const DEFS = `<defs><marker id="${mid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1a73e8"/></marker></defs>`;
+  const mrk = (id, c) => `<marker id="${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="${c}"/></marker>`;
+  const DEFS = `<defs>${mrk(mid, "#1a73e8")}${mrk(mid + "i", "#b26a00")}${mrk(mid + "s", "#0b3d91").replace('markerWidth="7" markerHeight="7"', 'markerWidth="4.5" markerHeight="4.5"')}</defs>`;
   if(!m.boxes.length) return `<svg viewBox="0 0 400 200"><text x="200" y="100" text-anchor="middle" fill="#8a94a3" font-size="16">Empty diagram</text></svg>`;
   let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
   m.boxes.forEach(b => { const {w, h} = boxSize(b); x0 = Math.min(x0, b.x - w / 2); y0 = Math.min(y0, b.y - h / 2); x1 = Math.max(x1, b.x + w / 2); y1 = Math.max(y1, b.y + h / 2); });
   m.flows.forEach(f => { const g = flowGeom(m, f); if(g){ x0 = Math.min(x0, g.mx - 110); x1 = Math.max(x1, g.mx + 110); y0 = Math.min(y0, g.my - 30); y1 = Math.max(y1, g.my + 30); } });
   const p = 24;
-  return `<svg viewBox="${x0 - p} ${y0 - p} ${x1 - x0 + 2 * p} ${y1 - y0 + 2 * p}" preserveAspectRatio="xMidYMid meet" role="img">${DEFS}${drawModel(m, {marker: mid})}</svg>`;
+  return `<svg viewBox="${x0 - p} ${y0 - p} ${x1 - x0 + 2 * p} ${y1 - y0 + 2 * p}" preserveAspectRatio="xMidYMid meet" role="img">${DEFS}${drawModel(m, {marker: mid, markerInf: mid + "i", markerSel: mid + "s", sel: o.sel})}</svg>`;
 }
 
 /* ================= STORE ================= */
@@ -694,7 +778,7 @@ function renderBoard(){
       <div class="dg" data-open="${esc(t.id)}">${staticSVG(m)}</div></div>`;
   }
   html += refShown
-    ? `<div class="cell ref"><header><b>Reference answer</b><span>8 systems · 11 flows</span></header><div class="dg" data-open="__ref">${staticSVG(REFERENCE)}</div></div>`
+    ? `<div class="cell ref"><header><b>Reference answer</b><span>${refVariant === "stated" ? "stated in the text · 3 flows" : "with inferences · 8 flows"}</span></header><div class="dg" data-open="__ref">${staticSVG(refModel())}</div></div>`
     : `<div class="cell ref"><header><b>Reference answer</b><span>hidden</span></header><div class="empty">Discuss the teams’ diagrams first.<button class="btn" data-reveal="1">Show reference</button></div></div>`;
   $("grid").innerHTML = html;
   $("boardNote").innerHTML = pages > 1 ? `Showing teams ${page * PER + 1}–${Math.min(sorted.length, page * PER + PER)} of ${sorted.length}. <button class="btn" data-page="1">Show next teams</button>` : "";
@@ -708,10 +792,56 @@ document.addEventListener("click", e => {
 function openModal(id){
   modalItem = id;
   let title, m;
-  if(id === "__ref"){ title = "Reference answer"; m = REFERENCE; }
+  if(id === "__ref"){ renderRefModal(); $("modal").classList.remove("hidden"); return; }
   else { const t = teams.find(x => x.id === id); if(!t) return closeModal(); title = t.name; m = teamModel(t); }
   $("mTitle").textContent = title; $("mBody").innerHTML = staticSVG(m); $("modal").classList.remove("hidden");
 }
+
+/* ================= REFERENCE VIEW: diagram + highlighted case text ================= */
+function renderRefModal(){
+  $("mTitle").textContent = "Reference answer, built from the case text";
+  const m = refModel(), it = refSel && REF_ITEMS[refSel];
+  const chips = ["amr", "web", "parts", "office"].map(id => `<button class="chip-o${refSel === id ? " on" : ""}" data-item="${id}">${esc(REF_ITEMS[id].name)}</button>`).join("");
+  const info = it ? `<div class="refinfo cat-${it.cat}"><span class="tag tag-${it.cat}">${CAT_LABEL[it.cat]}</span> <b>${esc(it.name)}</b><br>${esc(it.note)}</div>`
+                  : `<div class="refinfo">Click a box, an arrow, a piece of software below the diagram, or a highlighted passage.</div>`;
+  $("mBody").innerHTML = `<div class="refwrap">
+    <div class="refmain">
+      <div class="reftools">
+        <div class="seg"><button data-var="stated" class="${refVariant === "stated" ? "on" : ""}">Stated in the text</button><button data-var="inferred" class="${refVariant === "inferred" ? "on" : ""}">With reasonable inferences</button></div>
+        <button class="btn" data-reftext="1">${refText ? "Hide case text" : "Show case text"}</button>
+      </div>
+      <div class="refdg">${staticSVG(m, {sel: refSel})}</div>
+      <div class="legend">
+        <span><i class="sw sw-tps"></i>TPS</span><span><i class="sw sw-muted"></i>TPS with no flow here</span>
+        <span><i class="ln ln-stated"></i>Stated data flow</span><span><i class="ln ln-inferred"></i>Inferred data flow</span>
+        <span><i class="sw sw-other"></i>Other software (not TPS)</span>
+      </div>
+      <div class="others"><span class="note">Other software in the case (not TPS):</span> ${chips}</div>
+    </div>
+    ${refText ? `<aside class="reftext${refSel ? " focus" : ""}${refVariant === "stated" ? " var-stated" : ""}" id="refText">${info}${CASE_HL}</aside>` : ""}
+  </div>`;
+  if(refText && refSel){
+    const hits = [...$("refText").querySelectorAll("[data-refs]")].filter(s => s.dataset.refs.split(" ").includes(refSel));
+    hits.forEach(s => s.classList.add("on"));
+    if(hits[0]) hits[0].scrollIntoView({block: "center"});
+  }
+}
+$("mBody").addEventListener("click", e => {
+  if(modalItem !== "__ref") return;
+  const v = e.target.closest("[data-var]"); if(v){ refVariant = v.dataset.var; if(refSel && REF_ITEMS[refSel] && REF_ITEMS[refSel].cat === "inferred" && refVariant === "stated") refSel = null; renderRefModal(); renderBoard(); return; }
+  if(e.target.closest("[data-reftext]")){ refText = !refText; renderRefModal(); return; }
+  const c = e.target.closest("[data-item]"); if(c){ refSel = refSel === c.dataset.item ? null : c.dataset.item; renderRefModal(); return; }
+  const g = e.target.closest(".refdg [data-id]"); if(g){ refSel = refSel === g.dataset.id ? null : g.dataset.id; renderRefModal(); return; }
+  const s = e.target.closest(".reftext [data-refs]");
+  if(s){
+    const refs = s.dataset.refs.split(" ");
+    const visible = refs.filter(r => REF_ITEMS[r] && (REF_ITEMS[r].cat !== "inferred" || refVariant === "inferred"));
+    const k = visible.indexOf(refSel);
+    refSel = visible.length ? visible[(k + 1) % visible.length] : null;   // clicking again cycles through the passage's items
+    renderRefModal(); return;
+  }
+  if(e.target.closest(".refdg svg")){ refSel = null; renderRefModal(); }
+});
 function closeModal(){ modalItem = null; $("modal").classList.add("hidden"); }
 $("mClose").onclick = closeModal;
 $("modal").addEventListener("click", e => { if(e.target === $("modal")) closeModal(); });
